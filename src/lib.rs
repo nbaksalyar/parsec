@@ -59,6 +59,8 @@ mod peer_manager;
 mod round_hash;
 mod vote;
 
+// pub mod ffi;
+
 #[doc(hidden)]
 /// **NOT FOR PRODUCTION USE**: Mock types which trivially implement the required Parsec traits.
 ///
