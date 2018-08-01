@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ffi_utils::vec;
+use ffi_utils;
 use parsec::ffi::mock::{self, PeerId, Transaction};
 use parsec::ffi::{self, test_utils, Block, Parsec};
 use std::collections::BTreeSet;
@@ -22,7 +22,7 @@ pub struct Peer {
 
 impl Peer {
     pub fn new(id: *const PeerId, genesis_group: Vec<*const PeerId>) -> Self {
-        let (genesis_group, genesis_group_len, _) = vec::vec_into_raw_parts(genesis_group);
+        let (group, group_len, group_cap) = ffi_utils::vec_into_raw_parts(genesis_group);
         let parsec = unsafe {
             unwrap!(test_utils::get_1(|out| ffi::parsec_new(
                 id,

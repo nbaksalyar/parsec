@@ -48,4 +48,3 @@ pub extern "C" fn vote_create_proof(
 
 #[no_mangle]
 pub extern "C" fn vote_free(vote: *const Vote) -> *const FfiResult {}
-n

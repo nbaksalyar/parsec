@@ -8,8 +8,10 @@
 
 //! FFI.
 
-#[cfg(tests)]
-pub mod test_utils;
+#![allow(unsafe_code)]
+
+#[macro_use]
+pub mod utils;
 
 #[doc(hidden)]
 /// **NOT FOR PRODUCTION USE**: Mock types which trivially implement the required Parsec traits.
@@ -19,14 +21,16 @@ pub mod test_utils;
 /// outside of testing code.
 pub mod mock;
 
-mod block;
-mod gossip;
-mod parsec;
-mod proof;
-mod vote;
+// mod block;
+// mod gossip;
+// mod parsec;
+// mod proof;
+// mod vote;
 
-pub use block::*;
-pub use gossip::*;
-pub use parsec::*;
-pub use proof::*;
-pub use vote::*;
+// pub use block::*;
+// pub use gossip::*;
+// pub use parsec::*;
+// pub use proof::*;
+// pub use vote::*;
+
+pub use ffi_utils::FfiResult;

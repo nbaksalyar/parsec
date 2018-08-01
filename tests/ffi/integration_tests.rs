@@ -45,7 +45,7 @@ use self::utils::{
 static SEED: Option<[u32; 4]> = None;
 
 #[test]
-fn minimal_network() {
+fn ffi_minimal_network() {
     // 4 is the minimal network size for which the super majority is less than it.
     let num_peers = 4;
     let mut env = Environment::new(&PeerCount(num_peers), &TransactionCount(1), SEED);
@@ -64,7 +64,7 @@ fn minimal_network() {
 }
 
 #[test]
-fn multiple_votes_before_gossip() {
+fn ffi_multiple_votes_before_gossip() {
     let num_transactions = 10;
     let mut env = Environment::new(&PeerCount(4), &TransactionCount(num_transactions), SEED);
 
@@ -82,7 +82,7 @@ fn multiple_votes_before_gossip() {
 }
 
 #[test]
-fn multiple_votes_during_gossip() {
+fn ffi_multiple_votes_during_gossip() {
     let num_transactions = 10;
     let mut env = Environment::new(&PeerCount(4), &TransactionCount(num_transactions), SEED);
 
@@ -94,7 +94,7 @@ fn multiple_votes_during_gossip() {
 }
 
 #[test]
-fn duplicate_votes_before_gossip() {
+fn ffi_duplicate_votes_before_gossip() {
     let mut env = Environment::new(&PeerCount(4), &TransactionCount(1), SEED);
 
     let schedule = Schedule::new(
@@ -112,7 +112,7 @@ fn duplicate_votes_before_gossip() {
 }
 
 #[test]
-fn faulty_third_never_gossip() {
+fn ffi_faulty_third_never_gossip() {
     let num_peers = 10;
     let num_transactions = 10;
     let num_faulty = (num_peers - 1) / 3;
@@ -138,7 +138,7 @@ fn faulty_third_never_gossip() {
 }
 
 #[test]
-fn faulty_third_terminate_concurrently() {
+fn ffi_faulty_third_terminate_concurrently() {
     let num_peers = 10;
     let num_transactions = 10;
     let num_faulty = (num_peers - 1) / 3;
@@ -164,7 +164,7 @@ fn faulty_third_terminate_concurrently() {
 }
 
 #[test]
-fn faulty_nodes_terminate_at_random_points() {
+fn ffi_faulty_nodes_terminate_at_random_points() {
     let num_peers = 10;
     let num_transactions = 10;
     let prob_failure = 0.05;
@@ -187,7 +187,7 @@ fn faulty_nodes_terminate_at_random_points() {
 }
 
 #[test]
-fn random_schedule_no_delays() {
+fn ffi_random_schedule_no_delays() {
     let num_transactions = 10;
     let mut env = Environment::new(&PeerCount(4), &TransactionCount(num_transactions), SEED);
     let schedule = Schedule::new(
@@ -204,7 +204,7 @@ fn random_schedule_no_delays() {
 }
 
 #[test]
-fn random_schedule_probabilistic_gossip() {
+fn ffi_random_schedule_probabilistic_gossip() {
     let num_transactions = 10;
     let mut env = Environment::new(&PeerCount(4), &TransactionCount(num_transactions), SEED);
     let schedule = Schedule::new(

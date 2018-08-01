@@ -8,12 +8,21 @@
 
 //! Block FFI.
 
+use ffi::{ProofList, Vote};
+use ffi_utils::FFI_RESULT_OK
+
 /// Block FFI object.
 #[repr(C)]
 pub struct Block {
     payload: *const c_void,
-    proofs: *const Proof,
-    proofs_len: usize,
+    proofs: *const ProofList,
+}
+
+impl Drop for Block {
+    fn drop(&mut self) {
+        unsafe {
+        }
+    }
 }
 
 /// Create a new block from `payload` and the `public_ids` with their corresponding `votes`.
@@ -37,11 +46,12 @@ pub extern "C" fn block_payload(
 }
 
 /// Returns the Proofs of this block.
+///
+/// This block's Proofs should not be freed manually -- `block_free` takes care of that.
 #[no_mangle]
 pub extern "C" fn block_proofs(
     block: *const Block,
-    o_proofs: *mut *const *const Proof,
-    o_proofs_len: *mut usize,
+    o_proofs: *mut *const *ProofList,
 ) -> *const FfiResult {
 }
 
@@ -58,5 +68,8 @@ pub extern "C" fn block_add_vote(
 ) -> *const FfiResult {
 }
 
+/// Frees this block and its associated data.
 #[no_mangle]
-pub extern "C" fn block_free(block: *const Block) -> *const FfiResult {}
+pub extern "C" fn block_free(block: *const Block) -> *const FfiResult {
+
+}

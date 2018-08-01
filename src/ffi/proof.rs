@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ffi_utils::{FFI_RESULT_OK, self};
+use std::slice;
+
 #[repr(C)]
 pub struct Proof {
     pub public_id: *const u8,
@@ -35,4 +38,24 @@ pub extern "C" fn proof_is_valid(
 }
 
 #[no_mangle]
-pub extern "C" fn proof_free(proof: *const Proof) -> *const FfiResult {}
+pub extern "C" fn proof_free(proof: *const Proof) -> *const FfiResult {
+}
+
+#[repr(C)]
+pub struct ProofList {
+    pub proofs: *const *const Proof,
+    pub proofs_len: usize,
+}
+
+#[no_mangle]
+pub extern "C" fn proof_list_free(proof_list: *const ProofList) -> *const FfiResult {
+    let slice = slice::from_raw_parts(*proof_list.proofs, *proof_list.proofs_len);
+
+    for proof in slice {
+        proof_free(proof);
+    }
+
+    drop(*proof_list);
+
+    FFI_RESULT_OK
+}
