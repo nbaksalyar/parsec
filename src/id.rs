@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use safe_crypto::{PublicKeys, Signature as CryptoSignature, SecretKeys};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
@@ -16,6 +17,7 @@ use std::hash::Hash;
 pub trait PublicId: Clone + Eq + Ord + Hash + Serialize + DeserializeOwned + Debug {
     /// The signature type associated with the chosen asymmetric key scheme.
     type Signature: Clone + Eq + Ord + Hash + Serialize + DeserializeOwned + Debug;
+
     /// Verifies `signature` against `data` using this `PublicId`.  Returns `true` if valid.
     fn verify_signature(&self, signature: &Self::Signature, data: &[u8]) -> bool;
 }
@@ -38,6 +40,87 @@ pub trait SecretId {
             public_id: self.public_id().clone(),
             signature: self.sign_detached(data),
         }
+    }
+}
+
+/// An object representing the signature of a `PublicKey`.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Debug)]
+pub struct Signature ( CryptoSignature );
+
+impl Signature {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Consumes the object and returns the wrapped raw pointer.
+    ///
+    /// You're now responsible for freeing this memory once you're done.
+    pub fn into_repr_c(self) -> *const ffi::Signature {
+        Box::new(ffi::Signature {
+            signature: Box::new(self).into_raw(),
+        }).into_raw()
+    }
+}
+
+impl ReprC for Signature {
+    type C = *const ffi::Signature;
+    type Error = ();
+
+    /// Constructs the object from a raw pointer.
+    ///
+    /// After calling this function, the raw pointer is owned by the resulting object.
+    #[allow(unsafe_code)]
+    unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
+        // Get the native struct, extract from Box.
+        let native = Box::from_raw((*c_repr).signature as *mut _);
+        let signature = *native;
+
+        // Free the FFI struct.
+        let _ = Box::from_raw(c_repr as *mut _);
+
+        Ok(signature)
+    }
+}
+
+/// An object representing the public identity of a node. It is the default implementation of the
+/// `PublicId` trait.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Debug)]
+pub struct PublicKey ( PublicKeys );
+
+impl PublicKey {
+    pub fn new() -> Self {
+        PublicKey ( PublicKeys::new() )
+    }
+}
+
+impl PublicId for PublicKey {
+    type Signature = Signature;
+
+    fn verify_signature(&self, signature: &Self::Signature, data: &[u8]) -> bool {
+        self.0.verify_detached(&signature.0, data)
+    }
+}
+
+/// An object representing the secret identity of a node. It is the default implementation of the
+/// `SecretId` trait.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct SecretKey ( SecretKeys, PublicKey );
+
+impl SecretKey {
+    pub fn new() -> Self {
+        SecretKey (SecretKeys::new() )
+    }
+}
+
+impl SecretId for SecretKey {
+    type PublicId = PublicKey;
+
+    fn public_id(&self) -> &Self::PublicId {
+        &self.1
+    }
+
+    fn sign_detached(&self, data: &[u8]) -> <Self::PublicId as PublicId>::Signature {
+        Signature ( self.0.sign_detached(data).clone() )
     }
 }
 

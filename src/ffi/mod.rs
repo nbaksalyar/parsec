@@ -26,7 +26,8 @@ pub mod mock;
 pub mod error;
 // pub mod gossip;
 // pub mod parsec;
-// pub mod proof;
+/// Functions defining public and private identity traits and objects.
+pub mod id;
 // pub mod vote;
 
 pub use ffi_utils::FfiResult;

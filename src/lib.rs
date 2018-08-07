@@ -44,6 +44,7 @@ extern crate maidsafe_utilities;
 #[macro_use]
 extern crate quick_error;
 extern crate rand;
+extern crate safe_crypto;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

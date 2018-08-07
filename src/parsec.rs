@@ -9,6 +9,7 @@
 use block::Block;
 use dump_graph;
 use error::Error;
+use ffi::parsec as ffi;
 use gossip::{Event, Request, Response};
 use hash::Hash;
 use id::SecretId;
@@ -33,7 +34,7 @@ pub struct Parsec<T: NetworkEvent, S: SecretId> {
     events_with_valid_blocks: BTreeMap<S::PublicId, VecDeque<Hash>>,
     // Consensused network events that have not been returned via `poll()` yet.
     consensused_blocks: VecDeque<Block<T, S::PublicId>>,
-    // Hash of all payloads that were consensused ever
+    // Hash of all payloads that were consensused ever.
     consensus_history: Vec<Hash>,
     // The meta votes of the events.
     meta_votes: BTreeMap<Hash, BTreeMap<S::PublicId, Vec<MetaVote>>>,
@@ -41,6 +42,37 @@ pub struct Parsec<T: NetworkEvent, S: SecretId> {
     // the one for round `x` is held at index `x`.
     round_hashes: BTreeMap<S::PublicId, Vec<RoundHash>>,
     responsiveness_threshold: usize,
+}
+
+impl<T: NetworkEvent, S: SecretId> Parsec<T, S> {
+    /// Consumes the object and returns the wrapped raw pointer.
+    ///
+    /// You're now responsible for freeing this memory once you're done.
+    pub fn into_repr_c(self) -> *const ffi::Parsec {
+        Box::new(ffi::Parsec {
+            parsec: Box::new(self).into_raw(),
+        }).into_raw()
+    }
+}
+
+impl<T: NetworkEvent, S: SecretId> ReprC for Parsec<T, S> {
+    type C = *const ffi::Parsec;
+    type Error = ();
+
+    /// Constructs the object from a raw pointer.
+    ///
+    /// After calling this function, the raw pointer is owned by the resulting object.
+    #[allow(unsafe_code)]
+    unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
+        // Get the native struct, extract from Box.
+        let native = Box::from_raw((*c_repr).parsec as *mut _);
+        let parsec = *native;
+
+        // Free the FFI struct.
+        let _ = Box::from_raw(c_repr as *mut _);
+
+        Ok(parsec)
+    }
 }
 
 impl<T: NetworkEvent, S: SecretId> Parsec<T, S> {
