@@ -33,7 +33,9 @@ impl Signature {
     ///
     /// You're now responsible for freeing this memory once you're done.
     pub fn into_repr_c(self) -> Result<ffi::Signature, Error> {
-        let signature = CString::new(self.0.clone()).map_err(StringError::from)?.into_raw();
+        let signature = CString::new(self.0.clone())
+            .map_err(StringError::from)?
+            .into_raw();
 
         Ok(ffi::Signature { signature })
     }
@@ -68,7 +70,9 @@ impl PeerId {
     ///
     /// You're now responsible for freeing this memory once you're done.
     pub fn into_repr_c(self) -> Result<ffi::PeerId, Error> {
-        let id = CString::new(self.id.clone()).map_err(StringError::from)?.into_raw();
+        let id = CString::new(self.id.clone())
+            .map_err(StringError::from)?
+            .into_raw();
 
         Ok(ffi::PeerId { id })
     }
@@ -122,7 +126,9 @@ impl Transaction {
     ///
     /// You're now responsible for freeing this memory once you're done.
     pub fn into_repr_c(self) -> Result<ffi::Transaction, Error> {
-        let transaction = CString::new(self.0.clone()).map_err(StringError::from)?.into_raw();
+        let transaction = CString::new(self.0.clone())
+            .map_err(StringError::from)?
+            .into_raw();
 
         Ok(ffi::Transaction { transaction })
     }
@@ -136,7 +142,7 @@ impl ReprC for Transaction {
     unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
         let id = String::clone_from_repr_c((*c_repr).transaction)?;
 
-        Ok(Transaction (id))
+        Ok(Transaction(id))
     }
 }
 

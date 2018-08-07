@@ -82,10 +82,7 @@ impl Drop for PeerId {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn peer_id_new(
-    id: *const c_char,
-    o_peer_id: *mut *const PeerId,
-) -> i32 {
+pub unsafe extern "C" fn peer_id_new(id: *const c_char, o_peer_id: *mut *const PeerId) -> i32 {
     let id = try_res!(ffi_utils::from_c_str(id).map_err(Error::from));
     let peer_id = NativePeerId::new(&id);
     let peer_id = try_res!(peer_id.into_repr_c());
@@ -221,9 +218,7 @@ pub unsafe extern "C" fn transaction_new(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn transaction_rand(
-    o_transaction: *mut *const Transaction,
-) -> i32 {
+pub unsafe extern "C" fn transaction_rand(o_transaction: *mut *const Transaction) -> i32 {
     let mut cell = unwrap!(RNG.lock());
     let rng = cell.get_mut();
     let transaction = NativeTransaction::rand(rng);
@@ -243,10 +238,7 @@ pub unsafe extern "C" fn transaction_free(transaction: *const Transaction) -> i3
 ///
 /// `o_ids` must be freed using `peer_id_list_free`.
 #[no_mangle]
-pub unsafe extern "C" fn create_ids(
-    count: usize,
-    o_ids: *mut *const PeerIdList,
-) -> i32 {
+pub unsafe extern "C" fn create_ids(count: usize, o_ids: *mut *const PeerIdList) -> i32 {
     let ids: Vec<PeerId> = try_res!(
         mock::create_ids(count)
             .into_iter()

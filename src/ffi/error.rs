@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::cell::RefCell;
 use ffi_utils::FfiResult;
-use std::ptr;
+use std::cell::RefCell;
 use std::ffi::CString;
+use std::ptr;
 
 thread_local!{
     static LAST_ERROR: RefCell<Option<FfiResult>> = RefCell::new(None);
@@ -20,13 +20,10 @@ thread_local!{
 /// occurred.
 #[no_mangle]
 pub extern "C" fn err_last() -> *const FfiResult {
-    LAST_ERROR.with(|last| {
-        match *last.borrow() {
-            Some(err) => &err,
-            None => ptr::null(),
-        }
+    LAST_ERROR.with(|last| match *last.borrow() {
+        Some(err) => &err,
+        None => ptr::null(),
     })
-
 }
 
 /// Clears the last error.

@@ -7,14 +7,29 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 //! An example allocating and freeing memory using the FFI API. Can be used in combination with
-//! various tools to check for memory allocation problems. Requires nightly Rust.
+//! various tools to check for memory allocation problems.
 //!
-//! # Checking for memory leaks
+//! # Running sanitizers (requires nightly)
+//!
+//! You can run several different sanitizers using variations of the following command:
+//!
+//! ```
+//! RUSTFLAGS="-Z sanitizer=address" cargo run --example ffi_memory_check --target x86_64-apple-darwin -- --nocapture
+//! ```
+//!
+//! Possible targets are limited to:
+//!
+//! * x86_64-unknown-linux-gnu: supports the `address`, `leak`, `memory`, and `thread` sanitizers.
+//! * x86_64-apple-darwin: supports the `address` and `thread` sanitizers.
+//!
+//! More information can be found at https://github.com/japaric/rust-san.
+//!
+//! # Checking for memory leaks (requires nightly)
 //!
 //! You can check for memory leaks using Valgrind. Make sure you have it installed on your system.
 //!
-//! NOTE: You will first need to comment out the lines defining the global allocator, which are
-//! required for Valgrind to work but which conflict with the sanitizers (below).
+//! NOTE: You will first need to uncomment the lines defining the global allocator, which are
+//! required for Valgrind to work but which conflict with the sanitizers.
 //!
 //! Build the example:
 //!
@@ -29,23 +44,8 @@
 //! ```
 //!
 //! You should see a leak summary. The fields that concern us are "definitely lost" and "indirectly
-//! lost": these should be 0. The other fields can be treated with suspicion -- "possibly lost"
-//! seems to always report some bytes.
-//!
-//! # Running sanitizers
-//!
-//! You can run several different sanitizers using variations of the following command:
-//!
-//! ```
-//! RUSTFLAGS="-Z sanitizer=address" cargo run --example ffi_memory_check --target x86_64-apple-darwin -- --nocapture
-//! ```
-//!
-//! Possible targets are limited to:
-//!
-//! * x86_64-unknown-linux-gnu: supports the `address`, `leak`, `memory`, and `thread` sanitizers.
-//! * x86_64-apple-darwin: supports the `address` and `thread` sanitizers.
-//!
-//! More information can be found at https://github.com/japaric/rust-san.
+//! lost": these should be 0. The other fields can likely be ignored -- "possibly lost" seems to
+//! always report some bytes.
 
 #![forbid(
     exceeding_bitshifts, mutable_transmutes, no_mangle_const_items, unknown_crate_types, warnings
@@ -88,7 +88,7 @@ use std::ffi::CString;
 // Set the number of new/free iterations and the number of conversions for each object. The
 // total number of operations for each object is on the order of `NUM_ITERATIONS *
 // NUM_CONVERSIONS`.
-const NUM_ITERATIONS: usize = 1000;
+const NUM_ITERATIONS: usize = 100;
 const NUM_CONVERSIONS: usize = 100;
 
 fn main() {
@@ -119,7 +119,10 @@ fn main() {
     {
         let memory_after = procinfo::pid::statm_self().unwrap().resident;
         println!("\nMemory after: {}", memory_after);
-        assert!(memory_before >= memory_after);
+        if memory_before < memory_after {
+            println!("Warning: memory grew during the execution of this program.");
+            println!("This is expected if running sanitizers, an error otherwise.");
+        }
     }
 }
 
