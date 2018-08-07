@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use error::Error;
-use ffi_utils::{self, FfiResult, ReprC, FFI_RESULT_OK};
+use ffi_utils::{self, ReprC};
 use id::{PublicId, SecretId};
 use maidsafe_utilities::SeededRng;
 use mock::{
@@ -20,16 +20,17 @@ use std::os::raw::c_char;
 use std::slice;
 use std::sync::Mutex;
 
+// TODO: Make this thread-local instead?
 lazy_static! {
     static ref RNG: Mutex<RefCell<SeededRng>> = { Mutex::new(RefCell::new(SeededRng::new())) };
 }
 
 #[no_mangle]
-pub extern "C" fn rng_set(seed: [u32; 4]) -> *const FfiResult {
+pub extern "C" fn rng_set(seed: [u32; 4]) -> i32 {
     let cell = unwrap!(RNG.lock());
     let _ = cell.replace(SeededRng::from_seed(seed));
 
-    FFI_RESULT_OK
+    0
 }
 
 #[repr(C)]
@@ -49,7 +50,7 @@ impl Drop for Signature {
 pub unsafe extern "C" fn signature_new(
     data: *const c_char,
     o_signature: *mut *const Signature,
-) -> *const FfiResult {
+) -> i32 {
     let data = try_res!(ffi_utils::from_c_str(data).map_err(Error::from));
     let signature = NativeSignature::new(&data);
     let signature = try_res!(signature.into_repr_c());
@@ -58,10 +59,10 @@ pub unsafe extern "C" fn signature_new(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn signature_free(signature: *const Signature) -> *const FfiResult {
+pub unsafe extern "C" fn signature_free(signature: *const Signature) -> i32 {
     let _ = Box::from_raw(signature as *mut Signature);
 
-    FFI_RESULT_OK
+    0
 }
 
 /// **NOT FOR PRODUCTION USE**: Mock type implementing `PublicId` and `SecretId` traits.  For
@@ -84,7 +85,7 @@ impl Drop for PeerId {
 pub unsafe extern "C" fn peer_id_new(
     id: *const c_char,
     o_peer_id: *mut *const PeerId,
-) -> *const FfiResult {
+) -> i32 {
     let id = try_res!(ffi_utils::from_c_str(id).map_err(Error::from));
     let peer_id = NativePeerId::new(&id);
     let peer_id = try_res!(peer_id.into_repr_c());
@@ -99,7 +100,7 @@ pub unsafe extern "C" fn peer_id_verify_signature(
     data: *const u8,
     data_len: usize,
     o_status: *mut u8,
-) -> *const FfiResult {
+) -> i32 {
     let peer_id = try_res!(NativePeerId::clone_from_repr_c(peer_id));
     let signature = try_res!(NativeSignature::clone_from_repr_c(signature));
     let data = slice::from_raw_parts(data, data_len);
@@ -112,7 +113,7 @@ pub unsafe extern "C" fn peer_id_verify_signature(
 
     *o_status = status;
 
-    FFI_RESULT_OK
+    0
 }
 
 /// Returns the associated public identity.
@@ -120,10 +121,10 @@ pub unsafe extern "C" fn peer_id_verify_signature(
 pub unsafe extern "C" fn peer_id_public_id(
     peer_id: *const PeerId,
     o_public_id: *mut *const c_char,
-) -> *const FfiResult {
+) -> i32 {
     *o_public_id = (*peer_id).id;
 
-    FFI_RESULT_OK
+    0
 }
 
 /// Creates a detached `Signature` of `data`.
@@ -135,7 +136,7 @@ pub unsafe extern "C" fn peer_id_sign_detached(
     data: *const u8,
     data_len: usize,
     o_signature: *mut *const Signature,
-) -> *const FfiResult {
+) -> i32 {
     let peer_id = try_res!(NativePeerId::clone_from_repr_c(peer_id));
     let data = slice::from_raw_parts(data, data_len);
 
@@ -146,10 +147,10 @@ pub unsafe extern "C" fn peer_id_sign_detached(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn peer_id_free(peer_id: *const PeerId) -> *const FfiResult {
+pub unsafe extern "C" fn peer_id_free(peer_id: *const PeerId) -> i32 {
     let _ = Box::from_raw(peer_id as *mut PeerId);
 
-    FFI_RESULT_OK
+    0
 }
 
 #[repr(C)]
@@ -176,21 +177,21 @@ pub unsafe extern "C" fn peer_id_list_get(
     peer_id_list: *const PeerIdList,
     index: usize,
     o_peer_id: *mut *const PeerId,
-) -> *const FfiResult {
+) -> i32 {
     let slice = slice::from_raw_parts((*peer_id_list).peer_ids, (*peer_id_list).peer_ids_len);
 
     // TODO: check if `index` is less than list length, return error if not
 
     *o_peer_id = &slice[index];
 
-    FFI_RESULT_OK
+    0
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn peer_id_list_free(peer_id_list: *const PeerIdList) -> *const FfiResult {
+pub unsafe extern "C" fn peer_id_list_free(peer_id_list: *const PeerIdList) -> i32 {
     let _ = Box::from_raw(peer_id_list as *mut PeerIdList);
 
-    FFI_RESULT_OK
+    0
 }
 
 /// **NOT FOR PRODUCTION USE**: Mock struct representing a network event.
@@ -211,7 +212,7 @@ impl Drop for Transaction {
 pub unsafe extern "C" fn transaction_new(
     id: *const c_char,
     o_transaction: *mut *const Transaction,
-) -> *const FfiResult {
+) -> i32 {
     let id = try_res!(ffi_utils::from_c_str(id).map_err(Error::from));
     let transaction = NativeTransaction::new(&id);
     let transaction = try_res!(transaction.into_repr_c());
@@ -222,7 +223,7 @@ pub unsafe extern "C" fn transaction_new(
 #[no_mangle]
 pub unsafe extern "C" fn transaction_rand(
     o_transaction: *mut *const Transaction,
-) -> *const FfiResult {
+) -> i32 {
     let mut cell = unwrap!(RNG.lock());
     let rng = cell.get_mut();
     let transaction = NativeTransaction::rand(rng);
@@ -232,10 +233,10 @@ pub unsafe extern "C" fn transaction_rand(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn transaction_free(transaction: *const Transaction) -> *const FfiResult {
+pub unsafe extern "C" fn transaction_free(transaction: *const Transaction) -> i32 {
     let _ = Box::from_raw(transaction as *mut Transaction);
 
-    FFI_RESULT_OK
+    0
 }
 
 /// **NOT FOR PRODUCTION USE**: Returns a collection of mock node IDs with human-readable names.
@@ -245,7 +246,7 @@ pub unsafe extern "C" fn transaction_free(transaction: *const Transaction) -> *c
 pub unsafe extern "C" fn create_ids(
     count: usize,
     o_ids: *mut *const PeerIdList,
-) -> *const FfiResult {
+) -> i32 {
     let ids: Vec<PeerId> = try_res!(
         mock::create_ids(count)
             .into_iter()
@@ -264,10 +265,10 @@ pub unsafe extern "C" fn create_ids(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn names_len(o_len: *mut usize) -> *const FfiResult {
+pub unsafe extern "C" fn names_len(o_len: *mut usize) -> i32 {
     *o_len = mock::names_len();
 
-    FFI_RESULT_OK
+    0
 }
 
 #[cfg(test)]

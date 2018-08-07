@@ -21,16 +21,12 @@ pub mod utils;
 /// outside of testing code.
 pub mod mock;
 
-// mod block;
-// mod gossip;
-// mod parsec;
-// mod proof;
-// mod vote;
-
-// pub use block::*;
-// pub use gossip::*;
-// pub use parsec::*;
-// pub use proof::*;
-// pub use vote::*;
+// pub mod block;
+/// Functions for getting and clearing FFI errors.
+pub mod error;
+// pub mod gossip;
+// pub mod parsec;
+// pub mod proof;
+// pub mod vote;
 
 pub use ffi_utils::FfiResult;

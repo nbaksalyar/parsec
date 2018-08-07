@@ -8,22 +8,17 @@
 
 //! Utils.
 
-use std::mem;
-use ffi_utils::FfiResult;
-
 #[macro_export]
 macro_rules! try_res {
     ($result:expr) => {{
-        use ::ffi_utils::FfiResult;
-
+        use $crate::ffi::error;
         match $result {
             Ok(value) => value,
             e @ Err(_) => {
                 let (error_code, description) = ffi_result!(e);
-                return &FfiResult {
-                    error_code,
-                    description: description.as_ptr(),
-                };
+                error::err_set(error_code, description);
+
+                return error_code;
             }
         }
     }};
@@ -33,42 +28,41 @@ macro_rules! try_res {
 #[macro_export]
 macro_rules! ffi_return_1 {
     ($o_output:ident, $var:ident) => {{
-        use ::ffi_utils::FFI_RESULT_OK;
-
         let _out = Box::new($var);
         *$o_output = Box::leak(_out);
-        FFI_RESULT_OK
+        0
     }};
 }
 
-/// Runs an FFI function that contains zero output parameters and returns an i32 error code on
-/// failure
+/// Runs an FFI function that contains zero output parameters and returns an `i32` error code on
+/// failure.
 pub unsafe fn get_0<F>(f: F) -> Result<(), i32>
 where
-    F: FnOnce() -> *const FfiResult,
+    F: FnOnce() -> i32,
 {
     let res = f();
 
-    if (*res).error_code == 0 {
+    if res == 0 {
         Ok(())
     } else {
-        Err((*res).error_code)
+        Err(res)
     }
 }
 
 /// Runs an FFI function that contains one output parameter and returns either the output parameter
-/// on success or an i32 error code on failure.
+/// on success or an `i32` error code on failure.
 pub unsafe fn get_1<F, T>(f: F) -> Result<T, i32>
 where
-    F: FnOnce(*mut T) -> *const FfiResult,
+    F: FnOnce(*mut T) -> i32,
 {
-    let mut output: T = mem::uninitialized();
+    use std::mem;
 
+    let mut output: T = mem::uninitialized();
     let res = f(&mut output);
 
-    if (*res).error_code == 0 {
+    if res == 0 {
         Ok(output)
     } else {
-        Err((*res).error_code)
+        Err(res)
     }
 }

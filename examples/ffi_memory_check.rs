@@ -11,7 +11,12 @@
 //!
 //! # Checking for memory leaks
 //!
-//! You can check for memory leaks using Valgrind. First build the example:
+//! You can check for memory leaks using Valgrind. Make sure you have it installed on your system.
+//!
+//! NOTE: You will first need to comment out the lines defining the global allocator, which are
+//! required for Valgrind to work but which conflict with the sanitizers (below).
+//!
+//! Build the example:
 //!
 //! ```
 //! cargo build --example ffi_memory_check
@@ -28,9 +33,6 @@
 //! seems to always report some bytes.
 //!
 //! # Running sanitizers
-//!
-//! Note: You will need to comment out the lines specifying the `System` allocator, which are
-//! required for Valgrind but conflict with the sanitizers.
 //!
 //! You can run several different sanitizers using variations of the following command:
 //!
@@ -62,42 +64,74 @@
     box_pointers, missing_copy_implementations, missing_debug_implementations, trivial_casts,
     variant_size_differences
 )]
-#![feature(global_allocator)]
-#![feature(allocator_api)]
+// #![feature(global_allocator)]
+// #![feature(allocator_api)]
 
 extern crate ffi_utils;
 extern crate parsec;
+#[cfg(target_os = "linux")]
+extern crate procinfo;
 extern crate rand;
 #[macro_use]
 extern crate unwrap;
 
 // Use the system allocator for compatibility with Valgrind.
-use std::alloc::System;
-#[global_allocator]
-static GLOBAL: System = System;
+// use std::alloc::System;
+// #[global_allocator]
+// static GLOBAL: System = System;
 
 use ffi_utils::ReprC;
 use parsec::ffi::{mock, utils};
 use parsec::mock::{PeerId as NativePeerId, Signature as NativeSignature};
 use std::ffi::CString;
 
+// Set the number of new/free iterations and the number of conversions for each object. The
+// total number of operations for each object is on the order of `NUM_ITERATIONS *
+// NUM_CONVERSIONS`.
+const NUM_ITERATIONS: usize = 1000;
+const NUM_CONVERSIONS: usize = 100;
+
 fn main() {
-    // Set the number of new/free iterations and the number of conversions for each object. The
-    // total number of operations for each object is on the order of `NUM_ITERATIONS *
-    // NUM_CONVERSIONS`.
-    const NUM_ITERATIONS: usize = 100;
-    const NUM_CONVERSIONS: usize = 100;
+    // Measure the amount of baseline memory.
 
-    // Stack variables
+    println!("Measuring memory usage...");
 
+    #[cfg(target_os = "linux")]
+    let memory_before = {
+        let memory_before = procinfo::pid::statm_self().unwrap().resident;
+        println!("Memory before: {}\n", memory_before);
+        memory_before
+    };
+
+    #[cfg(not(target_os = "linux"))]
+    println!("Linux required, skipping.\n");
+
+    check_stack();
+
+    check_peer_id();
+
+    check_peer_id_list();
+
+    check_signature();
+
+    // Measure the amount of memory in use at the end.
+    #[cfg(target_os = "linux")]
+    {
+        let memory_after = procinfo::pid::statm_self().unwrap().resident;
+        println!("\nMemory after: {}", memory_after);
+        assert!(memory_before >= memory_after);
+    }
+}
+
+fn check_stack() {
     for _ in 1..NUM_ITERATIONS {
         let len = unsafe { unwrap!(utils::get_1(|out| mock::names_len(out))) };
         assert_eq!(len, 20);
     }
     println!("Finished checking stack variables.");
+}
 
-    // PeerId
-
+fn check_peer_id() {
     for _ in 1..NUM_ITERATIONS {
         let random = generate_random_string(10);
         let random2 = random.clone();
@@ -116,12 +150,14 @@ fn main() {
 
         assert_eq!(NativePeerId::new(&random2), native);
 
-        unsafe { unwrap!(utils::get_0(|| mock::peer_id_free(ptr))); }
+        unsafe {
+            unwrap!(utils::get_0(|| mock::peer_id_free(ptr)));
+        }
     }
     println!("Finished checking PeerId.");
+}
 
-    // PeerIdList
-
+fn check_peer_id_list() {
     for _ in 1..NUM_ITERATIONS {
         unsafe {
             let ids = unwrap!(utils::get_1(|out| mock::create_ids(8, out)));
@@ -129,9 +165,9 @@ fn main() {
         }
     }
     println!("Finished checking PeerIdList.");
+}
 
-    // Signature
-
+fn check_signature() {
     for _ in 1..NUM_ITERATIONS {
         let random = generate_random_string(10);
         let random2 = random.clone();
@@ -155,10 +191,14 @@ fn main() {
 
         assert_eq!(NativeSignature::new(&random2), native);
 
-        unsafe { unwrap!(utils::get_0(|| mock::signature_free(ptr))); }
+        unsafe {
+            unwrap!(utils::get_0(|| mock::signature_free(ptr)));
+        }
     }
     println!("Finished checking Signature.");
 }
+
+// TODO: Write function that allocates and reads some errors, call from `main`
 
 /// Generates a random String of `length` characters.
 fn generate_random_string(length: usize) -> String {
