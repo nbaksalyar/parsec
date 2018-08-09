@@ -8,30 +8,50 @@
 
 //! Utils.
 
-#[macro_export]
-macro_rules! try_res {
-    ($result:expr) => {{
-        use $crate::ffi::error;
-        match $result {
-            Ok(value) => value,
-            e @ Err(_) => {
-                let (error_code, description) = ffi_result!(e);
-                error::err_set(error_code, description);
+use error::Error;
+use ffi::error;
+use ffi_utils::{self, ErrorCode};
+use std::fmt::{Debug, Display};
+use std::panic::{self, AssertUnwindSafe};
 
-                return error_code;
-            }
+// #[macro_export]
+// macro_rules! try_res {
+//     ($result:expr) => {{
+//         use $crate::ffi::error;
+//         match $result {
+//             Ok(value) => value,
+//             e @ Err(_) => {
+//                 let (error_code, description) = ffi_result!(e);
+//                 error::err_set(error_code, description);
+
+//                 return error_code;
+//             }
+//         }
+//     }};
+// }
+
+// // Helper macro that sets the output value and ensures the value is not dropped.
+// #[macro_export]
+// macro_rules! ffi_return_1 {
+//     ($o_output:ident, $var:ident) => {{
+//         let _out = Box::new($var);
+//         *$o_output = Box::leak(_out);
+//     }};
+// }
+
+/// Catches panics. On error sets the thread-local error message and returns the `i32` error code.
+pub fn catch_unwind_err_set<'a, F>(f: F) -> i32
+where
+    F: FnOnce() -> Result<(), Error>,
+{
+    match ffi_utils::catch_unwind_result(f) {
+        Err(err) => {
+            let (error_code, description) = ffi_result!(Err::<(), Error>(err));
+            error::err_set(error_code, description);
+            error_code
         }
-    }};
-}
-
-// Helper macro that sets the output value and ensures the value is not dropped.
-#[macro_export]
-macro_rules! ffi_return_1 {
-    ($o_output:ident, $var:ident) => {{
-        let _out = Box::new($var);
-        *$o_output = Box::leak(_out);
-        0
-    }};
+        Ok(()) => 0,
+    }
 }
 
 /// Runs an FFI function that contains zero output parameters and returns an `i32` error code on

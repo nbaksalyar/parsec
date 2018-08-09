@@ -54,10 +54,21 @@ quick_error! {
             description("Duplicate vote")
             display("This node has already voted for this network event.")
         }
+        /// Utf8 Error.
+        Utf8(error: ::std::str::Utf8Error) {
+            description(error.description())
+            display("Utf8 error: {:?}", error)
+            from()
+        }
         /// Logic error.
         Logic {
             description("Logic error")
             display("This a logic error and represents a flaw in the code.")
+        }
+        /// Unexpected error. Contains custom error message.
+        Unexpected(error: String) {
+            description("An unexpected error has occurred.")
+            display("Unexpected error: {}", error)
         }
     }
 }
@@ -72,8 +83,10 @@ mod codes {
     pub const ERR_INVALID_EVENT: i32 = -6;
     pub const ERR_UNKNOWN_PARENT: i32 = -7;
     pub const ERR_DUPLICATE_VOTE: i32 = -8;
+    pub const ERR_UTF8: i32 = -9;
 
     pub const ERR_LOGIC: i32 = -100;
+    pub const ERR_UNEXPECTED: i32 = -101;
 }
 
 impl ErrorCode for Error {
@@ -89,8 +102,16 @@ impl ErrorCode for Error {
             Error::InvalidEvent => ERR_INVALID_EVENT,
             Error::UnknownParent => ERR_UNKNOWN_PARENT,
             Error::DuplicateVote => ERR_DUPLICATE_VOTE,
+            Error::Utf8(_) => ERR_UTF8,
 
             Error::Logic => ERR_LOGIC,
+            Error::Unexpected(_) => ERR_UNEXPECTED,
         }
+    }
+}
+
+impl<'a> From<&'a str> for Error {
+    fn from(s: &'a str) -> Self {
+        Error::Unexpected(s.to_string())
     }
 }

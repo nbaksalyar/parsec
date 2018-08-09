@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{PublicId, SecretId};
+use error::Error;
+use ffi::utils::catch_unwind_err_set;
 use ffi_utils::{FfiResult, FFI_RESULT_OK};
 use mock::PeerId;
 use rand::Rng;
@@ -101,13 +103,14 @@ pub unsafe extern "C" fn secret_id_from_bytes(
     id: *const u8,
     id_len: usize,
     o_secret_id: *mut *const SecretId,
-) -> *const FfiResult {
-    let public_id = slice::from_raw_parts(id, id_len);
-    let peer_id = PeerId::new(str::from_utf8(public_id).unwrap()); // FIXME unwrap
+) -> i32 {
+    catch_unwind_err_set(|| -> Result<(), Error> {
+        let public_id = slice::from_raw_parts(id, id_len);
+        let peer_id = PeerId::new(str::from_utf8(public_id)?);
 
-    *o_secret_id = Box::into_raw(Box::new(SecretId(peer_id)));
-
-    FFI_RESULT_OK
+        *o_secret_id = Box::into_raw(Box::new(SecretId(peer_id)));
+        Ok(())
+    })
 }
 
 #[no_mangle]
