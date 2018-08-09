@@ -112,8 +112,16 @@ mod tests {
 
     #[test]
     fn ffi_vote_smoke_test() {
-        let secret_id = unsafe { unwrap!(utils::get_1(|out| ffi::secret_id_new(out))) };
-        let payload = b"testing".to_vec();
+        let secret_id_bytes = b"hello";
+        let secret_id = unsafe {
+            unwrap!(utils::get_1(|out| ffi::secret_id_from_bytes(
+                secret_id_bytes.as_ptr(),
+                secret_id_bytes.len(),
+                out
+            )))
+        };
+
+        let payload = b"testing";
         let vote = unsafe {
             unwrap!(utils::get_1(|out| ffi::vote_new(
                 secret_id,

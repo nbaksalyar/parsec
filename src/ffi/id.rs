@@ -39,18 +39,6 @@ pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
     })
 }
 
-/// Creates a new `SecretId`.
-///
-/// `o_secret_key` must be freed using `secret_key_free`.
-#[no_mangle]
-pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
-    utils::catch_unwind_err_set(|| -> Result<_, Error> {
-        let secret = SecretId(PeerId::new("abc")); // rand
-        *o_secret = Box::into_raw(Box::new(secret));
-        Ok(())
-    })
-}
-
 /// Creates a secret ID from raw bytes pointed by `id` with a size `id_len`.
 /// Returns the opaque pointer to the `o_secret_id`.
 #[no_mangle]

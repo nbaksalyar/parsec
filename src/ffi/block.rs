@@ -159,7 +159,7 @@ mod tests {
             let mut public_ids = Vec::with_capacity(ids_count);
             let mut votes = Vec::with_capacity(ids_count);
 
-            for id in ids {
+            for id in &ids {
                 let id_bytes = id.as_bytes();
                 public_ids.push(unwrap!(utils::get_1(|id| public_id_from_bytes(
                     id_bytes.as_ptr(),
@@ -168,8 +168,13 @@ mod tests {
                 ))));
             }
 
-            for _ in 0..ids_count {
-                let secret_id = unwrap!(utils::get_1(|id| secret_id_new(id)));
+            for id in &ids {
+                let id_bytes = id.as_bytes();
+                let secret_id = unwrap!(utils::get_1(|id| secret_id_from_bytes(
+                    id_bytes.as_ptr(),
+                    id_bytes.len(),
+                    id
+                )));
 
                 votes.push(unwrap!(utils::get_1(|vote| vote_new(
                     secret_id,
