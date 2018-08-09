@@ -85,7 +85,16 @@ impl ParsecImpl for ParsecFfiImpl {
 
     fn have_voted_for(&mut self, event: &Transaction) -> bool {
         let event_data = unwrap!(serialise(event));
-        unsafe { parsec_have_voted_for(self.parsec, event_data.as_ptr(), event_data.len()) == 1 }
+        unsafe {
+            let mut voted = 0;
+            let _ = parsec_have_voted_for(
+                self.parsec,
+                event_data.as_ptr(),
+                event_data.len(),
+                &mut voted,
+            );
+            voted == 1
+        }
     }
 
     fn vote_for(&mut self, event: Transaction) -> Result<(), Error> {
