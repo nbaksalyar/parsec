@@ -14,30 +14,19 @@ use std::fmt::Debug;
 use std::panic::{self, AssertUnwindSafe};
 use std::slice;
 
-// #[macro_export]
-// macro_rules! try_res {
-//     ($result:expr) => {{
-//         use $crate::ffi::error;
-//         match $result {
-//             Ok(value) => value,
-//             e @ Err(_) => {
-//                 let (error_code, description) = ffi_result!(e);
-//                 error::err_set(error_code, description);
-
-//                 return error_code;
-//             }
-//         }
-//     }};
-// }
-
-// // Helper macro that sets the output value and ensures the value is not dropped.
-// #[macro_export]
-// macro_rules! ffi_return_1 {
-//     ($o_output:ident, $var:ident) => {{
-//         let _out = Box::new($var);
-//         *$o_output = Box::leak(_out);
-//     }};
-// }
+#[macro_export]
+macro_rules! assert_ffi {
+    ($e:expr) => {{
+        let err_code: i32 = $e;
+        if err_code != 0 {
+            use std::ffi::CStr;
+            use $crate::ffi::err_last;
+            let err = err_last();
+            let err_desc = unwrap!(CStr::from_ptr((*err).description).to_str());
+            panic!("Error with code {}: {}", err_code, err_desc)
+        }
+    }};
+}
 
 fn catch_unwind_result<'a, F, T, E>(f: F) -> Result<T, E>
 where

@@ -16,19 +16,6 @@ use parsec::Error;
 use std::collections::BTreeSet;
 use std::{mem, ptr, slice};
 
-macro_rules! assert_ffi {
-    ($e:expr) => {{
-        let err_code: i32 = $e;
-        if err_code != 0 {
-            use parsec::ffi::err_last;
-            use std::ffi::CStr;
-            let err = err_last();
-            let err_desc = unwrap!(CStr::from_ptr((*err).description).to_str());
-            panic!("Error with code {}: {}", err_code, err_desc)
-        }
-    }};
-}
-
 pub struct ParsecFfiImpl {
     parsec: *mut Parsec,
 }
@@ -181,6 +168,14 @@ impl ParsecImpl for ParsecFfiImpl {
 
 #[derive(Debug)]
 pub struct BlockFfiImpl(*const Block);
+
+impl Drop for BlockFfiImpl {
+    fn drop(&mut self) {
+        unsafe {
+            assert_ffi!(block_free(self.0 as *mut _));
+        }
+    }
+}
 
 impl BlockImpl for BlockFfiImpl {
     fn payload(&self) -> Transaction {

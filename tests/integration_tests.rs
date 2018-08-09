@@ -30,6 +30,7 @@
 )]
 
 extern crate maidsafe_utilities;
+#[macro_use]
 extern crate parsec;
 extern crate rand;
 #[macro_use]

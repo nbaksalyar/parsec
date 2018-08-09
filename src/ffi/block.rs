@@ -114,3 +114,128 @@ pub unsafe extern "C" fn block_free(block: *mut Block) -> i32 {
         Ok(())
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use ffi::*;
+    use mock;
+    use std::{mem, ptr, slice};
+
+    #[test]
+    fn ffi_block_new() {
+        let payload = b"hello world";
+
+        unsafe {
+            let mut block = mem::zeroed();
+
+            assert_ffi!(block_new(
+                payload.as_ptr(),
+                payload.len(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                &mut block,
+            ));
+
+            let payload_output = unwrap!(utils::get_vec_u8(|output, len| block_payload(
+                block, output, len
+            )));
+
+            assert_eq!(payload_output.len(), payload.len());
+            assert_eq!(payload_output.as_slice(), &payload[..]);
+
+            assert_ffi!(block_free(block as *mut _));
+        }
+    }
+
+    #[test]
+    fn ffi_block_add_vote() {
+        let ids_count = 4;
+        let ids = mock::create_ids(ids_count);
+
+        let payload = b"hello world";
+
+        unsafe {
+            let mut public_ids = Vec::with_capacity(ids_count);
+            let mut votes = Vec::with_capacity(ids_count);
+
+            for id in ids {
+                let id_bytes = id.as_bytes();
+                public_ids.push(unwrap!(utils::get_1(|id| public_id_from_bytes(
+                    id_bytes.as_ptr(),
+                    id_bytes.len(),
+                    id
+                ))));
+            }
+
+            for _ in 0..ids_count {
+                let secret_id = unwrap!(utils::get_1(|id| secret_id_new(id)));
+
+                votes.push(unwrap!(utils::get_1(|vote| vote_new(
+                    secret_id,
+                    payload.as_ptr(),
+                    payload.len(),
+                    vote
+                ))));
+
+                assert_ffi!(secret_id_free(secret_id));
+            }
+
+            // Create a new block
+            let mut block = mem::zeroed();
+
+            assert_ffi!(block_new(
+                payload.as_ptr(),
+                payload.len(),
+                public_ids.as_ptr(),
+                votes.as_ptr(),
+                ids_count - 1,
+                &mut block,
+            ));
+
+            // Try to add new votes
+            let proof_not_held = unwrap!(utils::get_1(|proof| block_add_vote(
+                block as *mut _,
+                public_ids[ids_count - 2],
+                votes[ids_count - 2],
+                proof
+            )));
+            assert_eq!(proof_not_held, 0);
+
+            let proof_not_held = unwrap!(utils::get_1(|proof| block_add_vote(
+                block as *mut _,
+                public_ids[ids_count - 1],
+                votes[ids_count - 1],
+                proof
+            )));
+            assert_eq!(proof_not_held, 1);
+
+            // Get list of proofs
+            let proof_list = unwrap!(utils::get_1(|out| block_proofs(block, out)));
+            assert_eq!(proof_list.proofs_len, ids_count);
+
+            let proofs = slice::from_raw_parts(proof_list.proofs, proof_list.proofs_len);
+
+            for proof in proofs {
+                let is_valid = unwrap!(utils::get_1(|out| proof_is_valid(
+                    proof,
+                    payload.as_ptr(),
+                    payload.len(),
+                    out
+                )));
+
+                assert_eq!(is_valid, 1);
+            }
+
+            // Free memory
+            assert_ffi!(proof_list_free(&proof_list));
+            for id in public_ids {
+                assert_ffi!(public_id_free(id));
+            }
+            for vote in votes {
+                assert_ffi!(vote_free(vote));
+            }
+            assert_ffi!(block_free(block as *mut _));
+        }
+    }
+}

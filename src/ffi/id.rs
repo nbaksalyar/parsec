@@ -89,6 +89,7 @@ pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
 }
 
 /// Serves as an opaque pointer to `Proof` struct.
+#[derive(Debug)]
 pub struct Proof(pub(crate) NativeProof<PeerId>);
 
 /// Returns a public ID to `o_public_id` associated with a `proof`.
@@ -154,6 +155,7 @@ pub unsafe extern "C" fn proof_free(proof: *const Proof) -> i32 {
 /// Container for a list of proofs.
 /// Should be deallocated with `proof_list_free`.
 #[repr(C)]
+#[derive(Debug)]
 pub struct ProofList {
     /// Pointer to a sequential list of proofs.
     pub proofs: *const Proof,
@@ -165,7 +167,7 @@ pub struct ProofList {
 
 /// Deallocates proof list.
 #[no_mangle]
-pub unsafe extern "C" fn proof_list_free(proof_list: *mut ProofList) -> i32 {
+pub unsafe extern "C" fn proof_list_free(proof_list: *const ProofList) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
         let vec = Vec::from_raw_parts(
             (*proof_list).proofs as *mut _,
