@@ -11,21 +11,32 @@
 use super::{BlockImpl, ParsecImpl};
 use maidsafe_utilities::serialisation::{deserialise, serialise};
 use parsec::ffi::*;
-use parsec::mock::PeerId;
+use parsec::mock::{PeerId, Transaction};
 use parsec::Error;
 use std::collections::BTreeSet;
 use std::{mem, ptr, slice};
 
+macro_rules! assert_ffi {
+    ($e:expr) => {{
+        let err_code: i32 = $e;
+        if err_code != 0 {
+            use parsec::ffi::err_last;
+            use std::ffi::CStr;
+            let err = err_last();
+            let err_desc = unwrap!(CStr::from_ptr((*err).description).to_str());
+            panic!("Error with code {}: {}", err_code, err_desc)
+        }
+    }};
+}
+
 pub struct ParsecFfiImpl {
     parsec: *mut Parsec,
-    our_id: *const SecretId,
 }
 
 impl Drop for ParsecFfiImpl {
     fn drop(&mut self) {
         unsafe {
-            let _ = secret_id_free(self.our_id);
-            let _ = parsec_free(self.parsec);
+            assert_ffi!(parsec_free(self.parsec));
         }
     }
 }
@@ -42,7 +53,11 @@ impl ParsecImpl for ParsecFfiImpl {
                 .map(|id| {
                     let mut pub_id = mem::zeroed();
                     let id_bytes = id.as_bytes();
-                    let _ = public_id_from_bytes(id_bytes.as_ptr(), id_bytes.len(), &mut pub_id);
+                    assert_ffi!(public_id_from_bytes(
+                        id_bytes.as_ptr(),
+                        id_bytes.len(),
+                        &mut pub_id
+                    ));
                     pub_id
                 })
                 .collect();
@@ -51,29 +66,34 @@ impl ParsecImpl for ParsecFfiImpl {
             let mut our_secret_id = mem::zeroed();
 
             let id = our_id.as_bytes();
-            let _ = secret_id_from_bytes(id.as_ptr(), id.len(), &mut our_secret_id);
-            let _ = parsec_new(
+
+            assert_ffi!(secret_id_from_bytes(
+                id.as_ptr(),
+                id.len(),
+                &mut our_secret_id
+            ));
+
+            assert_ffi!(parsec_new(
                 our_secret_id,
                 genesis_vec.as_ptr(),
                 genesis_vec.len(),
                 &mut parsec,
-            );
+            ));
 
             genesis_vec.into_iter().for_each(|id| {
-                let _ = public_id_free(id);
+                assert_ffi!(public_id_free(id));
             });
 
-            Self {
-                parsec,
-                our_id: our_secret_id,
-            }
+            assert_ffi!(secret_id_free(our_secret_id));
+
+            Self { parsec }
         }
     }
 
     fn poll(&mut self) -> Option<Self::Block> {
         unsafe {
             let mut o_block = mem::zeroed();
-            let _ = parsec_poll(self.parsec, &mut o_block);
+            assert_ffi!(parsec_poll(self.parsec, &mut o_block));
 
             if o_block.is_null() {
                 None
@@ -87,12 +107,12 @@ impl ParsecImpl for ParsecFfiImpl {
         let event_data = unwrap!(serialise(event));
         unsafe {
             let mut voted = 0;
-            let _ = parsec_have_voted_for(
+            assert_ffi!(parsec_have_voted_for(
                 self.parsec,
                 event_data.as_ptr(),
                 event_data.len(),
                 &mut voted,
-            );
+            ));
             voted == 1
         }
     }
@@ -100,7 +120,11 @@ impl ParsecImpl for ParsecFfiImpl {
     fn vote_for(&mut self, event: Transaction) -> Result<(), Error> {
         let event_data = unwrap!(serialise(&event));
         unsafe {
-            let _ = parsec_vote_for(self.parsec, event_data.as_ptr(), event_data.len());
+            assert_ffi!(parsec_vote_for(
+                self.parsec,
+                event_data.as_ptr(),
+                event_data.len()
+            ));
         }
         Ok(())
     }
@@ -115,9 +139,13 @@ impl ParsecImpl for ParsecFfiImpl {
         unsafe {
             let mut src_id = mem::zeroed();
 
-            let _ = public_id_from_bytes(src_bytes.as_ptr(), src_bytes.len(), &mut src_id);
-            let _ = parsec_handle_request(self.parsec, src_id, req, &mut o_resp);
-            let _ = public_id_free(src_id);
+            assert_ffi!(public_id_from_bytes(
+                src_bytes.as_ptr(),
+                src_bytes.len(),
+                &mut src_id
+            ));
+            assert_ffi!(parsec_handle_request(self.parsec, src_id, req, &mut o_resp));
+            assert_ffi!(public_id_free(src_id));
         }
         Ok(o_resp)
     }
@@ -127,9 +155,13 @@ impl ParsecImpl for ParsecFfiImpl {
         unsafe {
             let mut src_id = mem::zeroed();
 
-            let _ = public_id_from_bytes(src_bytes.as_ptr(), src_bytes.len(), &mut src_id);
-            let _ = parsec_handle_response(self.parsec, src_id, resp);
-            let _ = public_id_free(src_id);
+            assert_ffi!(public_id_from_bytes(
+                src_bytes.as_ptr(),
+                src_bytes.len(),
+                &mut src_id
+            ));
+            assert_ffi!(parsec_handle_response(self.parsec, src_id, resp));
+            assert_ffi!(public_id_free(src_id));
         }
         Ok(())
     }
@@ -137,7 +169,11 @@ impl ParsecImpl for ParsecFfiImpl {
     fn create_gossip(&self, _peer_id: Option<PeerId>) -> Result<Self::Request, Error> {
         unsafe {
             let mut o_request = mem::zeroed();
-            let _ = parsec_create_gossip(self.parsec, ptr::null(), &mut o_request);
+            assert_ffi!(parsec_create_gossip(
+                self.parsec,
+                ptr::null(),
+                &mut o_request
+            ));
             Ok(o_request)
         }
     }
@@ -152,7 +188,7 @@ impl BlockImpl for BlockFfiImpl {
         let mut payload_len: usize = 0;
 
         let payload: &[u8] = unsafe {
-            let _ = block_payload(self.0, &mut payload_bytes, &mut payload_len);
+            assert_ffi!(block_payload(self.0, &mut payload_bytes, &mut payload_len));
             slice::from_raw_parts(payload_bytes, payload_len)
         };
 

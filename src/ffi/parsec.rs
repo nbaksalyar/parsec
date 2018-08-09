@@ -111,6 +111,8 @@ pub unsafe extern "C" fn parsec_handle_response(
 
 /// Steps the algorithm and returns the next stable block, if any.
 /// Returns an opaque block (`o_block`) if there's a block or a null pointer instead.
+/// If non-null pointer is returned, it's a user's responsibility to free it after use
+/// by calling `block_free`.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_poll(parsec: *mut Parsec, o_block: *mut *const Block) -> i32 {
     catch_unwind_err_set(|| -> Result<_, Error> {

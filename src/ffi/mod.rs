@@ -40,8 +40,8 @@ pub struct Response(ParsecResp<NetworkEvent, PeerId>);
 impl NetEvent for Vec<u8> {}
 
 pub use ffi::block::*;
+pub use ffi::error::*;
 pub use ffi::id::*;
-pub use ffi::mock::*;
 pub use ffi::parsec::*;
 pub use ffi::vote::*;
 pub use ffi_utils::FfiResult;

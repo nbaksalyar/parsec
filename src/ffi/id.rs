@@ -50,19 +50,22 @@ pub unsafe extern "C" fn public_id_from_bytes(
     id: *const u8,
     id_len: usize,
     o_public_id: *mut *const PublicId,
-) -> *const FfiResult {
-    let public_id = slice::from_raw_parts(id, id_len);
-    let peer_id = PeerId::new(str::from_utf8(public_id).unwrap()); // FIXME unwrap
+) -> i32 {
+    catch_unwind_err_set(|| -> Result<_, Error> {
+        let public_id = slice::from_raw_parts(id, id_len);
+        let peer_id = PeerId::new(str::from_utf8(public_id)?);
 
-    *o_public_id = Box::into_raw(Box::new(PublicId(peer_id)));
-
-    FFI_RESULT_OK
+        *o_public_id = Box::into_raw(Box::new(PublicId(peer_id)));
+        Ok(())
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
-    let _ = Box::from_raw(public_id as *mut PublicId);
-    0
+    catch_unwind_err_set(|| -> Result<_, Error> {
+        let _ = Box::from_raw(public_id as *mut PublicId);
+        Ok(())
+    })
 }
 
 /// Creates a new `SecretId`.
@@ -70,11 +73,12 @@ pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
 /// `o_secret_key` must be freed using `secret_key_free`.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
-    let secret = SecretId(PeerId::new("abc")); // rand
-    *o_secret = &secret;
-    mem::forget(secret);
-
-    0
+    catch_unwind_err_set(|| -> Result<_, Error> {
+        let secret = SecretId(PeerId::new("abc")); // rand
+        *o_secret = &secret;
+        mem::forget(secret);
+        Ok(())
+    })
 }
 
 /// Returns the associated `PublicId`.
