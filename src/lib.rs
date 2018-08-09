@@ -36,15 +36,12 @@
 
 #[macro_use]
 extern crate ffi_utils;
-// #[macro_use]
-// extern crate lazy_static;
 #[macro_use]
 extern crate log;
 extern crate maidsafe_utilities;
 #[macro_use]
 extern crate quick_error;
 extern crate rand;
-// extern crate safe_crypto;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
