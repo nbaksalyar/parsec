@@ -15,11 +15,11 @@ use ffi_utils::FFI_RESULT_OK;
 
 /// Block FFI object.
 #[repr(C)]
-pub struct Block(NativeBlock<NetworkEvent, PeerId>);
+pub struct Block(pub(crate) NativeBlock<NetworkEvent, PeerId>);
 
 /// Create a new block from `payload` and the `public_ids` with their corresponding `votes`.
 #[no_mangle]
-pub extern "C" fn new_block(
+pub unsafe extern "C" fn new_block(
     payload: *const u8,
     public_ids: *const *const u8,
     votes: *const *const Vote,
@@ -34,12 +34,16 @@ pub extern "C" fn new_block(
 
 /// Returns the Payload of this block.
 #[no_mangle]
-pub extern "C" fn block_payload(
+pub unsafe extern "C" fn block_payload(
     block: *const Block,
     o_payload: *mut *const u8,
     o_payload_len: *mut usize,
 ) -> *const FfiResult {
-    //*o_payload = (*block).payload;
+    let payload = (*block).0.payload();
+
+    *o_payload = payload.as_ptr();
+    *o_payload_len = payload.len();
+
     FFI_RESULT_OK
 }
 
@@ -47,7 +51,7 @@ pub extern "C" fn block_payload(
 ///
 /// This block's Proofs should not be freed manually -- `block_free` takes care of that.
 #[no_mangle]
-pub extern "C" fn block_proofs(
+pub unsafe extern "C" fn block_proofs(
     block: *const Block,
     o_proofs: *mut *const ProofList,
 ) -> *const FfiResult {
@@ -59,7 +63,7 @@ pub extern "C" fn block_proofs(
 /// `o_new_proof` to `1` if the `Proof` wasn't previously held in this `Block`, or `0` if it was
 /// previously held.
 #[no_mangle]
-pub extern "C" fn block_add_vote(
+pub unsafe extern "C" fn block_add_vote(
     block: *const Block,
     peer_id: *const u8,
     vote: *const Vote,
@@ -70,6 +74,6 @@ pub extern "C" fn block_add_vote(
 
 /// Frees this block and its associated data.
 #[no_mangle]
-pub extern "C" fn block_free(block: *const Block) -> *const FfiResult {
+pub unsafe extern "C" fn block_free(block: *const Block) -> *const FfiResult {
     FFI_RESULT_OK
 }

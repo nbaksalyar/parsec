@@ -74,15 +74,18 @@ impl ParsecImpl for ParsecFfiImpl {
         unsafe {
             let mut o_block = mem::zeroed();
             let _ = parsec_poll(self.parsec, &mut o_block);
+
+            if o_block.is_null() {
+                None
+            } else {
+                Some(BlockFfiImpl(o_block))
+            }
         }
-        None
     }
 
     fn have_voted_for(&mut self, event: &Transaction) -> bool {
         let event_data = unwrap!(serialise(event));
-        let _ =
-            unsafe { parsec_have_voted_for(self.parsec, event_data.as_ptr(), event_data.len()) };
-        true
+        unsafe { parsec_have_voted_for(self.parsec, event_data.as_ptr(), event_data.len()) == 1 }
     }
 
     fn vote_for(&mut self, event: Transaction) -> Result<(), Error> {
@@ -95,33 +98,39 @@ impl ParsecImpl for ParsecFfiImpl {
 
     fn handle_request(
         &mut self,
-        _src: &PeerId,
+        src: &PeerId,
         req: Self::Request,
     ) -> Result<Self::Response, Error> {
         let mut o_resp = unsafe { mem::zeroed() };
-        // let id = unwrap!(serialise(&src));
-        // src -> public_id_new()
+        let src_bytes = src.as_bytes();
         unsafe {
-            let _ = parsec_handle_request(self.parsec, ptr::null(), req, &mut o_resp);
+            let mut src_id = mem::zeroed();
+
+            let _ = public_id_from_bytes(src_bytes.as_ptr(), src_bytes.len(), &mut src_id);
+            let _ = parsec_handle_request(self.parsec, src_id, req, &mut o_resp);
+            let _ = public_id_free(src_id);
         }
         Ok(o_resp)
     }
 
-    fn handle_response(&mut self, _src: &PeerId, resp: Self::Response) -> Result<(), Error> {
-        // let id = unwrap!(serialise(&src));
-        // src -> public_id_new()
+    fn handle_response(&mut self, src: &PeerId, resp: Self::Response) -> Result<(), Error> {
+        let src_bytes = src.as_bytes();
         unsafe {
-            let _ = parsec_handle_response(self.parsec, ptr::null(), resp);
+            let mut src_id = mem::zeroed();
+
+            let _ = public_id_from_bytes(src_bytes.as_ptr(), src_bytes.len(), &mut src_id);
+            let _ = parsec_handle_response(self.parsec, src_id, resp);
+            let _ = public_id_free(src_id);
         }
         Ok(())
     }
 
     fn create_gossip(&self, _peer_id: Option<PeerId>) -> Result<Self::Request, Error> {
-        let mut o_request = unsafe { mem::zeroed() };
         unsafe {
+            let mut o_request = mem::zeroed();
             let _ = parsec_create_gossip(self.parsec, ptr::null(), &mut o_request);
+            Ok(o_request)
         }
-        Ok(o_request)
     }
 }
 
