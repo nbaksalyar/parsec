@@ -5,7 +5,7 @@
 // under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
-
+/*
 //! An example allocating and freeing memory using the FFI API. Can be used in combination with
 //! various tools to check for memory allocation problems.
 //!
@@ -210,3 +210,6 @@ fn generate_random_string(length: usize) -> String {
     let mut os_rng = unwrap!(::rand::OsRng::new());
     os_rng.gen_ascii_chars().take(length).collect()
 }
+*/
+
+fn main() {}

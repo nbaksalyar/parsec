@@ -6,13 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use error::Error;
-use ffi::mock as ffi;
-use ffi_utils::{ReprC, StringError};
 use id::{PublicId, SecretId};
 use network_event::NetworkEvent;
 use rand::{Rand, Rng};
-use std::ffi::CString;
 use std::fmt::{self, Debug, Display, Formatter};
 
 const NAMES: &[&str] = &[
@@ -28,29 +24,6 @@ impl Signature {
     pub fn new(sig: &str) -> Self {
         Signature(sig.to_string())
     }
-
-    /// Consumes the object and returns the wrapped raw pointer.
-    ///
-    /// You're now responsible for freeing this memory once you're done.
-    pub fn into_repr_c(self) -> Result<ffi::Signature, Error> {
-        let signature = CString::new(self.0.clone())
-            .map_err(StringError::from)?
-            .into_raw();
-
-        Ok(ffi::Signature { signature })
-    }
-}
-
-impl ReprC for Signature {
-    type C = *const ffi::Signature;
-    type Error = Error;
-
-    #[allow(unsafe_code)]
-    unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
-        let signature = String::clone_from_repr_c((*c_repr).signature)?;
-
-        Ok(Signature(signature))
-    }
 }
 
 /// **NOT FOR PRODUCTION USE**: Mock type implementing `PublicId` and `SecretId` traits.  For
@@ -64,29 +37,6 @@ pub struct PeerId {
 impl PeerId {
     pub fn new(id: &str) -> Self {
         Self { id: id.to_string() }
-    }
-
-    /// Consumes the object and returns the wrapped raw pointer.
-    ///
-    /// You're now responsible for freeing this memory once you're done.
-    pub fn into_repr_c(self) -> Result<ffi::PeerId, Error> {
-        let id = CString::new(self.id.clone())
-            .map_err(StringError::from)?
-            .into_raw();
-
-        Ok(ffi::PeerId { id })
-    }
-}
-
-impl ReprC for PeerId {
-    type C = *const ffi::PeerId;
-    type Error = Error;
-
-    #[allow(unsafe_code)]
-    unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
-        let id = String::clone_from_repr_c((*c_repr).id)?;
-
-        Ok(PeerId { id })
     }
 }
 
@@ -120,29 +70,6 @@ pub struct Transaction(String);
 impl Transaction {
     pub fn new(id: &str) -> Self {
         Transaction(id.to_string())
-    }
-
-    /// Consumes the object and returns the wrapped raw pointer.
-    ///
-    /// You're now responsible for freeing this memory once you're done.
-    pub fn into_repr_c(self) -> Result<ffi::Transaction, Error> {
-        let transaction = CString::new(self.0.clone())
-            .map_err(StringError::from)?
-            .into_raw();
-
-        Ok(ffi::Transaction { transaction })
-    }
-}
-
-impl ReprC for Transaction {
-    type C = *const ffi::Transaction;
-    type Error = Error;
-
-    #[allow(unsafe_code)]
-    unsafe fn clone_from_repr_c(c_repr: Self::C) -> Result<Self, Self::Error> {
-        let id = String::clone_from_repr_c((*c_repr).transaction)?;
-
-        Ok(Transaction(id))
     }
 }
 

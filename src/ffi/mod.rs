@@ -8,26 +8,40 @@
 
 //! FFI.
 
+// TODO: !!!
+#![allow(unused)]
+#![allow(missing_docs)]
 #![allow(unsafe_code)]
 
 #[macro_use]
 pub mod utils;
 
-#[doc(hidden)]
-/// **NOT FOR PRODUCTION USE**: Mock types which trivially implement the required Parsec traits.
-///
-/// This can be used to swap proper cryptographic functionality for inexpensive (in some cases
-/// no-op) replacements.  This is useful to allow tests to run quickly, but should not be used
-/// outside of testing code.
-pub mod mock;
-
-// pub mod block;
+pub mod block;
 /// Functions for getting and clearing FFI errors.
 pub mod error;
-// pub mod gossip;
-// pub mod parsec;
 /// Functions defining public and private identity traits and objects.
 pub mod id;
-// pub mod vote;
+pub mod parsec;
+pub mod vote;
 
+use super::{Request as ParsecReq, Response as ParsecResp};
+use mock;
+use network_event::NetworkEvent as NetEvent;
+
+pub(crate) type NetworkEvent = Vec<u8>;
+pub(crate) type PeerId = mock::PeerId;
+
+pub struct SecretId(PeerId);
+pub struct PublicId(PeerId);
+
+pub struct Request(ParsecReq<NetworkEvent, PeerId>);
+pub struct Response(ParsecResp<NetworkEvent, PeerId>);
+
+impl NetEvent for Vec<u8> {}
+
+pub use ffi::block::*;
+pub use ffi::id::*;
+pub use ffi::mock::*;
+pub use ffi::parsec::*;
+pub use ffi::vote::*;
 pub use ffi_utils::FfiResult;

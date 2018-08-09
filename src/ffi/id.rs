@@ -6,96 +6,99 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ffi_utils::{self, FFI_RESULT_OK};
-use id::{
-    PublicKey as NativePublicKey, SecretKey as NativeSecretKey, Signature as NativeSignature,
-};
-use std::slice;
+use super::{PublicId, SecretId};
+use ffi_utils::{FfiResult, FFI_RESULT_OK};
+use mock::PeerId;
+use rand::Rng;
+use std::{mem, slice};
 
 #[repr(C)]
-pub struct Signature {
-    pub signature: *const NativeSignature,
-}
+pub struct Signature;
 
-#[no_mangle]
-pub extern "C" fn signature_as_bytes(
-    signature: *const Signature,
-    o_bytes: *const u8,
-    o_bytes_len: usize,
-) -> i32 {
-
-}
+// #[no_mangle]
+// pub extern "C" fn signature_as_bytes(
+//     signature: *const Signature,
+//     o_bytes: *const u8,
+//     o_bytes_len: usize,
+// ) -> i32 {
+//     0
+// }
 
 #[no_mangle]
 pub extern "C" fn signature_free(signature: *const Signature) -> i32 {
-    let _ = Box::from_raw((*self).signature as *mut _);
-    let _ = Box::from_raw(signature as *mut _);
-}
-
-#[repr(C)]
-pub struct PublicKey {
-    pub id: *const NativePublicKey,
+    // let _ = Box::from_raw((*self).signature as *mut _);
+    // let _ = Box::from_raw(signature as *mut _);
+    0
 }
 
 /// Verifies `signature` against `data` using this `public_key`. Returns `1` if valid.
 #[no_mangle]
-pub extern "C" fn public_key_verify_signature(
-    public_key: *const PublicKey,
+pub extern "C" fn public_id_verify_signature(
+    public_key: *const PublicId,
     signature: *const Signature,
     data: *const u8,
     data_len: usize,
     o_status: *mut u8,
 ) -> i32 {
-
+    0
 }
 
 #[no_mangle]
-pub extern "C" fn public_key_free(public_key: *const PublicKey) -> i32 {
-    let _ = Box::from_raw((*self).id as *mut _);
-    let _ = Box::from_raw(public_key as *mut _);
+pub unsafe extern "C" fn public_id_from_bytes() -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
-#[repr(C)]
-pub struct SecretKey {
-    pub id: *const SecretKey,
+#[no_mangle]
+pub unsafe extern "C" fn secret_id_from_bytes() -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
-/// Creates a new `SecretKey`.
+#[no_mangle]
+pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
+    // let _ = Box::from_raw((*self).id as *mut _);
+    let _ = Box::from_raw(public_id as *mut PublicId);
+    0
+}
+
+/// Creates a new `SecretId`.
 ///
 /// `o_secret_key` must be freed using `secret_key_free`.
 #[no_mangle]
-pub extern "C" fn secret_key_new(o_secret_key: *mut *const SecretKey) -> i32 {
-    let secret_key = NativeSecretKey::new();
-    let secret_key = secret_key.into_repr_c();
+pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
+    let secret = SecretId(PeerId::new("abc")); // rand
+    *o_secret = &secret;
+    mem::forget(secret);
 
-    ffi_return_1!(o_secret_key, secret_key)
+    0
 }
 
-/// Returns the associated `PublicKey`.
+/// Returns the associated `PublicId`.
 ///
 /// `o_public_key` must be freed using `public_key_free`.
 #[no_mangle]
-pub extern "C" fn secret_key_public_key(
-    secret_key: *const SecretKey,
-    o_public_key: *mut *const PublicKey,
+pub unsafe extern "C" fn secret_id_public(
+    secret_key: *const SecretId,
+    o_public_key: *mut *const PublicId,
 ) -> i32 {
-
+    0
 }
 
-#[no_mangle]
-pub extern "C" fn secret_key_sign_detached(
-    secret_key: *const SecretKey,
-    data: *const u8,
-    data_len: usize,
-    o_signature: *mut *const Signature,
-) -> i32 {
+// #[no_mangle]
+// pub unsafe extern "C" fn secret_id_sign_detached(
+//     secret_key: *const SecretId,
+//     data: *const u8,
+//     data_len: usize,
+//     o_signature: *mut *const Signature,
+// ) -> i32 {
+//     0
+// }
 
-}
-
 #[no_mangle]
-pub extern "C" fn secret_key_free(secret_key: *const SecretKey) -> i32 {
-    let _ = Box::from_raw((*self).id as *mut _);
-    let _ = Box::from_raw(secret_key as *mut _);
+pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
+    // let _ = Box::from_raw((*self).id as *mut _);
+    let _ = Box::from_raw(secret_id as *mut SecretId);
+
+    0
 }
 
 #[repr(C)]
@@ -105,45 +108,50 @@ pub struct Proof {
 }
 
 #[no_mangle]
-pub extern "C" fn proof_public_id(
+pub unsafe extern "C" fn proof_public_id(
     proof: *const Proof,
     o_public_id: *mut *const u8,
 ) -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
 #[no_mangle]
-pub extern "C" fn proof_signature(
+pub unsafe extern "C" fn proof_signature(
     proof: *const Proof,
     o_signature: *mut *const u8,
 ) -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
 #[no_mangle]
-pub extern "C" fn proof_is_valid(
+pub unsafe extern "C" fn proof_is_valid(
     proof: *const Proof,
     data: *const u8,
     o_is_valid: u8,
 ) -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
 #[no_mangle]
-pub extern "C" fn proof_free(proof: *const Proof) -> *const FfiResult {}
+pub unsafe extern "C" fn proof_free(proof: *const Proof) -> *const FfiResult {
+    FFI_RESULT_OK
+}
 
 #[repr(C)]
 pub struct ProofList {
-    pub proofs: *const *const Proof,
+    pub proofs: *const Proof,
     pub proofs_len: usize,
 }
 
 #[no_mangle]
-pub extern "C" fn proof_list_free(proof_list: *const ProofList) -> *const FfiResult {
-    let slice = slice::from_raw_parts(*proof_list.proofs, *proof_list.proofs_len);
+pub unsafe extern "C" fn proof_list_free(proof_list: *const ProofList) -> *const FfiResult {
+    let slice = slice::from_raw_parts((*proof_list).proofs, (*proof_list).proofs_len);
 
     for proof in slice {
-        proof_free(proof);
+        let _ = proof_free(proof); // TODO: unused result
     }
 
-    drop(*proof_list);
+    let _ = *proof_list;
 
     FFI_RESULT_OK
 }

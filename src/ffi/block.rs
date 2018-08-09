@@ -8,22 +8,14 @@
 
 //! Block FFI.
 
-use ffi::{ProofList, Vote};
-use ffi_utils::FFI_RESULT_OK
+use block::Block as NativeBlock;
+use ffi::{FfiResult, ProofList, Vote};
+use ffi::{NetworkEvent, PeerId};
+use ffi_utils::FFI_RESULT_OK;
 
 /// Block FFI object.
 #[repr(C)]
-pub struct Block {
-    payload: *const c_void,
-    proofs: *const ProofList,
-}
-
-impl Drop for Block {
-    fn drop(&mut self) {
-        unsafe {
-        }
-    }
-}
+pub struct Block(NativeBlock<NetworkEvent, PeerId>);
 
 /// Create a new block from `payload` and the `public_ids` with their corresponding `votes`.
 #[no_mangle]
@@ -34,7 +26,10 @@ pub extern "C" fn new_block(
     votes_len: usize,
     o_block: *mut *const Block,
 ) -> *const FfiResult {
-
+    // let block = Box::new(Block(NativeBlock::new(payload, votes)));
+    // *o_block = Box::into_raw(block);
+    // mem::forget(block);
+    FFI_RESULT_OK
 }
 
 /// Returns the Payload of this block.
@@ -42,7 +37,10 @@ pub extern "C" fn new_block(
 pub extern "C" fn block_payload(
     block: *const Block,
     o_payload: *mut *const u8,
+    o_payload_len: *mut usize,
 ) -> *const FfiResult {
+    //*o_payload = (*block).payload;
+    FFI_RESULT_OK
 }
 
 /// Returns the Proofs of this block.
@@ -51,8 +49,9 @@ pub extern "C" fn block_payload(
 #[no_mangle]
 pub extern "C" fn block_proofs(
     block: *const Block,
-    o_proofs: *mut *const *ProofList,
+    o_proofs: *mut *const ProofList,
 ) -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
 /// Converts `vote` to a `Proof` and attempts to add it to the block. Returns an error if `vote` is
@@ -66,10 +65,11 @@ pub extern "C" fn block_add_vote(
     vote: *const Vote,
     o_new_proof: *mut u8,
 ) -> *const FfiResult {
+    FFI_RESULT_OK
 }
 
 /// Frees this block and its associated data.
 #[no_mangle]
 pub extern "C" fn block_free(block: *const Block) -> *const FfiResult {
-
+    FFI_RESULT_OK
 }

@@ -34,23 +34,23 @@
     variant_size_differences
 )]
 
-#[macro_use]
+// #[macro_use]
 extern crate ffi_utils;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate log;
+// #[macro_use]
+// extern crate lazy_static;
+// #[macro_use]
+// extern crate log;
 extern crate maidsafe_utilities;
 #[macro_use]
 extern crate quick_error;
 extern crate rand;
-extern crate safe_crypto;
+// extern crate safe_crypto;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate tiny_keccak;
-#[macro_use]
-extern crate unwrap;
+// #[macro_use]
+// extern crate unwrap;
 
 mod block;
 mod dump_graph;
