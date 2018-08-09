@@ -51,17 +51,6 @@ pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
     })
 }
 
-/// Returns the associated `PublicId`.
-///
-/// `o_public_key` must be freed using `public_key_free`.
-#[no_mangle]
-pub unsafe extern "C" fn secret_id_public(
-    _secret_key: *const SecretId,
-    _o_public_key: *mut *const PublicId,
-) -> i32 {
-    0
-}
-
 /// Creates a secret ID from raw bytes pointed by `id` with a size `id_len`.
 /// Returns the opaque pointer to the `o_secret_id`.
 #[no_mangle]
@@ -82,10 +71,10 @@ pub unsafe extern "C" fn secret_id_from_bytes(
 /// Deallocates a secret id.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
-    // let _ = Box::from_raw((*self).id as *mut _);
-    let _ = Box::from_raw(secret_id as *mut SecretId);
-
-    0
+    utils::catch_unwind_err_set(|| -> Result<(), Error> {
+        let _ = Box::from_raw(secret_id as *mut SecretId);
+        Ok(())
+    })
 }
 
 /// Serves as an opaque pointer to `Proof` struct.
