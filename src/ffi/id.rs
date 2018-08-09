@@ -13,37 +13,6 @@ use id::Proof as NativeProof;
 use mock::PeerId;
 use std::{slice, str};
 
-/// Opaque structure holding a signature.
-pub struct Signature;
-
-// #[no_mangle]
-// pub extern "C" fn signature_as_bytes(
-//     signature: *const Signature,
-//     o_bytes: *const u8,
-//     o_bytes_len: usize,
-// ) -> i32 {
-//     0
-// }
-
-// #[no_mangle]
-// pub unsafe extern "C" fn signature_free(_signature: *const Signature) -> i32 {
-//     // let _ = Box::from_raw((*self).signature as *mut _);
-//     // let _ = Box::from_raw(signature as *mut _);
-//     0
-// }
-
-// /// Verifies `signature` against `data` using this `public_key`. Returns `1` if valid.
-// #[no_mangle]
-// pub extern "C" fn public_id_verify_signature(
-//     public_key: *const PublicId,
-//     signature: *const Signature,
-//     data: *const u8,
-//     data_len: usize,
-//     o_status: *mut u8,
-// ) -> i32 {
-//     0
-// }
-
 /// Creates a public ID from raw bytes pointed by `id` with a size `id_len`.
 /// Returns the opaque pointer to the `o_public_id`.
 #[no_mangle]
@@ -92,16 +61,6 @@ pub unsafe extern "C" fn secret_id_public(
 ) -> i32 {
     0
 }
-
-// #[no_mangle]
-// pub unsafe extern "C" fn secret_id_sign_detached(
-//     secret_key: *const SecretId,
-//     data: *const u8,
-//     data_len: usize,
-//     o_signature: *mut *const Signature,
-// ) -> i32 {
-//     0
-// }
 
 /// Creates a secret ID from raw bytes pointed by `id` with a size `id_len`.
 /// Returns the opaque pointer to the `o_secret_id`.

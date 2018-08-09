@@ -29,7 +29,6 @@ use mock;
 use network_event::NetworkEvent as NetEvent;
 
 pub(crate) type NetworkEvent = Vec<u8>;
-// pub(crate) type Signature = Vec<u8>;
 pub(crate) type PeerId = mock::PeerId;
 
 /// Secret peer signing key.
