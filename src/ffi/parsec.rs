@@ -13,7 +13,7 @@ use parsec::Parsec as NativeParsec;
 use std::collections::BTreeSet;
 use std::{mem, ptr, slice};
 
-/// Serves as an opaque pointer to `Parsec` struct
+/// Serves as an opaque pointer to `Parsec` struct.
 pub struct Parsec(NativeParsec<NetworkEvent, PeerId>);
 
 /// Creates a new `Parsec` for a peer with the given ID and genesis peer IDs (ours included).

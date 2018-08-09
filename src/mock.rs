@@ -24,6 +24,10 @@ impl Signature {
     pub fn new(sig: &str) -> Self {
         Signature(sig.to_string())
     }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
 }
 
 /// **NOT FOR PRODUCTION USE**: Mock type implementing `PublicId` and `SecretId` traits.  For

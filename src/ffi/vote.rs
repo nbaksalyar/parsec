@@ -8,7 +8,7 @@
 
 use error::Error;
 use ffi::id::Proof;
-use ffi::{utils, NetworkEvent, PeerId, SecretId, PublicId};
+use ffi::{utils, NetworkEvent, PeerId, PublicId, SecretId};
 use std::slice;
 use vote::Vote as NativeVote;
 
@@ -37,11 +37,13 @@ pub unsafe extern "C" fn vote_payload(
     o_payload: *mut *const u8,
     o_payload_len: *mut usize,
 ) -> i32 {
-    let payload = (*vote).0.payload();
+    utils::catch_unwind_err_set(|| -> Result<_, Error> {
+        let payload = (*vote).0.payload();
 
-    *o_payload = payload.as_ptr();
-    *o_payload_len = payload.len();
-    0
+        *o_payload = payload.as_ptr();
+        *o_payload_len = payload.len();
+        Ok(())
+    })
 }
 
 #[no_mangle]
@@ -50,11 +52,13 @@ pub unsafe extern "C" fn vote_signature(
     o_signature: *mut *const u8,
     o_signature_len: *mut usize,
 ) -> i32 {
-    let signature = (*vote).0.signature();
+    utils::catch_unwind_err_set(|| -> Result<_, Error> {
+        let signature = (*vote).0.signature().as_bytes();
 
-    *o_signature = signature.as_ptr();
-    *o_signature_len = signature.len();
-    0
+        *o_signature = signature.as_ptr();
+        *o_signature_len = signature.len();
+        Ok(())
+    })
 }
 
 #[no_mangle]
@@ -63,13 +67,15 @@ pub unsafe extern "C" fn vote_is_valid(
     public_id: *const PublicId,
     o_is_valid: *mut u8,
 ) -> i32 {
-    if (*vote).0.is_valid(&(*public_id).0) {
-        *o_is_valid = 1
-    } else {
-        *o_is_valid = 0
-    }
+    utils::catch_unwind_err_set(|| -> Result<_, Error> {
+        if (*vote).0.is_valid(&(*public_id).0) {
+            *o_is_valid = 1
+        } else {
+            *o_is_valid = 0
+        }
 
-    0
+        Ok(())
+    })
 }
 
 #[no_mangle]
@@ -78,10 +84,12 @@ pub unsafe extern "C" fn vote_create_proof(
     public_id: *const PublicId,
     o_proof: *mut *const Proof,
 ) -> i32 {
-    let native_proof = (*vote).0.create_proof(&(*public_id).0);
+    utils::catch_unwind_err_set(|| -> Result<_, Error> {
+        let native_proof = (*vote).0.create_proof(&(*public_id).0)?;
 
-    *o_proof = Box::into_raw(Box::new(Proof(native_proof)));
-    0
+        *o_proof = Box::into_raw(Box::new(Proof::new(native_proof)));
+        Ok(())
+    })
 }
 
 #[no_mangle]
