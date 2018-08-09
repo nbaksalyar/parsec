@@ -10,7 +10,7 @@ use super::{PublicId, SecretId};
 use ffi_utils::{FfiResult, FFI_RESULT_OK};
 use mock::PeerId;
 use rand::Rng;
-use std::{mem, slice};
+use std::{mem, slice, str};
 
 #[repr(C)]
 pub struct Signature;
@@ -31,31 +31,34 @@ pub extern "C" fn signature_free(signature: *const Signature) -> i32 {
     0
 }
 
-/// Verifies `signature` against `data` using this `public_key`. Returns `1` if valid.
-#[no_mangle]
-pub extern "C" fn public_id_verify_signature(
-    public_key: *const PublicId,
-    signature: *const Signature,
-    data: *const u8,
-    data_len: usize,
-    o_status: *mut u8,
-) -> i32 {
-    0
-}
+// /// Verifies `signature` against `data` using this `public_key`. Returns `1` if valid.
+// #[no_mangle]
+// pub extern "C" fn public_id_verify_signature(
+//     public_key: *const PublicId,
+//     signature: *const Signature,
+//     data: *const u8,
+//     data_len: usize,
+//     o_status: *mut u8,
+// ) -> i32 {
+//     0
+// }
 
 #[no_mangle]
-pub unsafe extern "C" fn public_id_from_bytes() -> *const FfiResult {
-    FFI_RESULT_OK
-}
+pub unsafe extern "C" fn public_id_from_bytes(
+    id: *const u8,
+    id_len: usize,
+    o_public_id: *mut *const PublicId,
+) -> *const FfiResult {
+    let public_id = slice::from_raw_parts(id, id_len);
+    let peer_id = PeerId::new(str::from_utf8(public_id).unwrap()); // FIXME unwrap
 
-#[no_mangle]
-pub unsafe extern "C" fn secret_id_from_bytes() -> *const FfiResult {
+    *o_public_id = Box::into_raw(Box::new(PublicId(peer_id)));
+
     FFI_RESULT_OK
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
-    // let _ = Box::from_raw((*self).id as *mut _);
     let _ = Box::from_raw(public_id as *mut PublicId);
     0
 }
@@ -92,6 +95,20 @@ pub unsafe extern "C" fn secret_id_public(
 // ) -> i32 {
 //     0
 // }
+
+#[no_mangle]
+pub unsafe extern "C" fn secret_id_from_bytes(
+    id: *const u8,
+    id_len: usize,
+    o_secret_id: *mut *const SecretId,
+) -> *const FfiResult {
+    let public_id = slice::from_raw_parts(id, id_len);
+    let peer_id = PeerId::new(str::from_utf8(public_id).unwrap()); // FIXME unwrap
+
+    *o_secret_id = Box::into_raw(Box::new(SecretId(peer_id)));
+
+    FFI_RESULT_OK
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {

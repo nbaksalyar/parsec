@@ -38,6 +38,10 @@ impl PeerId {
     pub fn new(id: &str) -> Self {
         Self { id: id.to_string() }
     }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.id.as_bytes()
+    }
 }
 
 impl Debug for PeerId {

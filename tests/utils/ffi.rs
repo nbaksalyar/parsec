@@ -18,6 +18,16 @@ use std::{mem, ptr, slice};
 
 pub struct ParsecFfiImpl {
     parsec: *mut Parsec,
+    our_id: *const SecretId,
+}
+
+impl Drop for ParsecFfiImpl {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = secret_id_free(self.our_id);
+            let _ = parsec_free(self.parsec);
+        }
+    }
 }
 
 impl ParsecImpl for ParsecFfiImpl {
@@ -25,23 +35,39 @@ impl ParsecImpl for ParsecFfiImpl {
     type Request = *const Request;
     type Response = *const Response;
 
-    fn new(_our_id: PeerId, genesis_group: &BTreeSet<PeerId>) -> Self {
-        let genesis_vec: Vec<&PeerId> = genesis_group.iter().collect();
-
-        let mut parsec: *mut Parsec = unsafe { mem::zeroed() };
-
-        // secret_id_new()
-
+    fn new(our_id: PeerId, genesis_group: &BTreeSet<PeerId>) -> Self {
         unsafe {
+            let genesis_vec: Vec<*const PublicId> = genesis_group
+                .iter()
+                .map(|id| {
+                    let mut pub_id = mem::zeroed();
+                    let id_bytes = id.as_bytes();
+                    let _ = public_id_from_bytes(id_bytes.as_ptr(), id_bytes.len(), &mut pub_id);
+                    pub_id
+                })
+                .collect();
+
+            let mut parsec: *mut Parsec = mem::zeroed();
+            let mut our_secret_id = mem::zeroed();
+
+            let id = our_id.as_bytes();
+            let _ = secret_id_from_bytes(id.as_ptr(), id.len(), &mut our_secret_id);
             let _ = parsec_new(
-                ptr::null(), // our_id
-                genesis_vec.as_ptr() as *const _,
+                our_secret_id,
+                genesis_vec.as_ptr(),
                 genesis_vec.len(),
                 &mut parsec,
             );
-        }
 
-        Self { parsec }
+            genesis_vec.into_iter().for_each(|id| {
+                let _ = public_id_free(id);
+            });
+
+            Self {
+                parsec,
+                our_id: our_secret_id,
+            }
+        }
     }
 
     fn poll(&mut self) -> Option<Self::Block> {

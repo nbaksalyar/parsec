@@ -24,12 +24,9 @@ pub unsafe extern "C" fn parsec_new(
     o_parsec: *mut *mut Parsec,
 ) -> *const FfiResult {
     let genesis_vec = slice::from_raw_parts(genesis_group, genesis_group_len);
-    let genesis_group_set: BTreeSet<_> = genesis_vec.iter().collect();
+    let genesis_group_set: BTreeSet<_> = genesis_vec.iter().map(|id| (**id).0.clone()).collect();
 
-    let native_parsec = NativeParsec::new(
-        PeerId::new("hello"),
-        /* &genesis_group_set */ &BTreeSet::new(),
-    ).unwrap();
+    let native_parsec = NativeParsec::new((*our_id).0.clone(), &genesis_group_set).unwrap();
     let mut parsec = Box::new(Parsec(native_parsec));
 
     *o_parsec = Box::into_raw(parsec);
