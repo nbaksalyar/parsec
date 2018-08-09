@@ -19,7 +19,7 @@ thread_local!{
 /// time an error occurs, so make sure to copy any needed data. This may return NULL if no error has
 /// occurred.
 #[no_mangle]
-pub extern "C" fn err_last() -> *const FfiResult {
+pub unsafe extern "C" fn err_last() -> *const FfiResult {
     LAST_ERROR.with(|last| match *last.borrow() {
         Some(err) => &err,
         None => ptr::null(),
@@ -28,7 +28,7 @@ pub extern "C" fn err_last() -> *const FfiResult {
 
 /// Clears the last error.
 #[no_mangle]
-pub extern "C" fn err_clear() {
+pub unsafe extern "C" fn err_clear() {
     LAST_ERROR.with(|last| {
         *last.borrow_mut() = None;
     });
