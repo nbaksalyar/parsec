@@ -9,7 +9,6 @@
 use error::Error;
 use ffi::utils::catch_unwind_err_set;
 use ffi::{Block, FfiResult, NetworkEvent, PeerId, PublicId, Request, Response, SecretId};
-use ffi_utils::FFI_RESULT_OK;
 use parsec::Parsec as NativeParsec;
 use std::collections::BTreeSet;
 use std::{mem, ptr, slice};
@@ -17,6 +16,9 @@ use std::{mem, ptr, slice};
 /// Serves as an opaque pointer to `Parsec` struct
 pub struct Parsec(NativeParsec<NetworkEvent, PeerId>);
 
+/// Creates a new `Parsec` for a peer with the given ID and genesis peer IDs (ours included).
+/// You should initialise these IDs through functions like `public_id_from_bytes`.
+///
 /// Returns an opaque pointer to the `Parsec` structure.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_new(
@@ -38,6 +40,7 @@ pub unsafe extern "C" fn parsec_new(
     })
 }
 
+/// Adds a vote for `network_event`. Returns an error if we have already voted for this.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_vote_for(
     parsec: *mut Parsec,
@@ -51,6 +54,10 @@ pub unsafe extern "C" fn parsec_vote_for(
     })
 }
 
+/// Creates a new message to be gossiped to a peer containing all gossip events this node thinks
+/// that peer needs.  If `peer_id` is `NULL`, a message containing all known gossip events is
+/// returned.  If `peer_id` is an id and the given peer is unknown to this node, an error is
+/// returned.
 /// Returns an opaque `request`.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_create_gossip(
@@ -71,7 +78,9 @@ pub unsafe extern "C" fn parsec_create_gossip(
     })
 }
 
-/// Returns an opaque `response`.
+/// Handles a received request (`req`) from `src` peer.
+/// Returns an opaque `response` to be sent back to `src`
+/// or an error if the request was not valid.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_handle_request(
     parsec: *mut Parsec,
@@ -86,7 +95,8 @@ pub unsafe extern "C" fn parsec_handle_request(
     })
 }
 
-/// Handles an opaque response.
+/// Handles a received response (`resp`) from `src` peer.
+/// Returns error if the response was not valid.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_handle_response(
     parsec: *mut Parsec,
@@ -100,11 +110,11 @@ pub unsafe extern "C" fn parsec_handle_response(
 }
 
 /// Steps the algorithm and returns the next stable block, if any.
+/// Returns an opaque block (`o_block`) if there's a block or a null pointer instead.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_poll(parsec: *mut Parsec, o_block: *mut *const Block) -> i32 {
     catch_unwind_err_set(|| -> Result<_, Error> {
         let res = (*parsec).0.poll();
-
         *o_block = if let Some(block) = res {
             let block = Block(block);
             Box::into_raw(Box::new(block))
@@ -115,6 +125,8 @@ pub unsafe extern "C" fn parsec_poll(parsec: *mut Parsec, o_block: *mut *const B
     })
 }
 
+/// Checks if the given `network_event` has already been voted for by us.
+/// Returns 0 (false) or 1 (true) in `o_result`.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_have_voted_for(
     parsec: *const Parsec,
@@ -129,6 +141,7 @@ pub unsafe extern "C" fn parsec_have_voted_for(
     })
 }
 
+/// Frees memory allocated by the `Parsec` instance.
 #[no_mangle]
 pub unsafe extern "C" fn parsec_free(parsec: *mut Parsec) -> i32 {
     catch_unwind_err_set(|| -> Result<_, Error> {

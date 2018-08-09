@@ -9,9 +9,10 @@
 //! Block FFI.
 
 use block::Block as NativeBlock;
-use ffi::{FfiResult, ProofList, Vote};
+use error::Error;
+use ffi::utils::catch_unwind_err_set;
 use ffi::{NetworkEvent, PeerId};
-use ffi_utils::FFI_RESULT_OK;
+use ffi::{ProofList, Vote};
 
 /// Block FFI object.
 #[repr(C)]
@@ -25,11 +26,11 @@ pub unsafe extern "C" fn new_block(
     votes: *const *const Vote,
     votes_len: usize,
     o_block: *mut *const Block,
-) -> *const FfiResult {
+) -> i32 {
     // let block = Box::new(Block(NativeBlock::new(payload, votes)));
     // *o_block = Box::into_raw(block);
     // mem::forget(block);
-    FFI_RESULT_OK
+    catch_unwind_err_set(|| -> Result<_, Error> { Ok(()) })
 }
 
 /// Returns the Payload of this block.
@@ -38,24 +39,23 @@ pub unsafe extern "C" fn block_payload(
     block: *const Block,
     o_payload: *mut *const u8,
     o_payload_len: *mut usize,
-) -> *const FfiResult {
-    let payload = (*block).0.payload();
+) -> i32 {
+    catch_unwind_err_set(|| -> Result<_, Error> {
+        let payload = (*block).0.payload();
 
-    *o_payload = payload.as_ptr();
-    *o_payload_len = payload.len();
+        *o_payload = payload.as_ptr();
+        *o_payload_len = payload.len();
 
-    FFI_RESULT_OK
+        Ok(())
+    })
 }
 
 /// Returns the Proofs of this block.
 ///
 /// This block's Proofs should not be freed manually -- `block_free` takes care of that.
 #[no_mangle]
-pub unsafe extern "C" fn block_proofs(
-    block: *const Block,
-    o_proofs: *mut *const ProofList,
-) -> *const FfiResult {
-    FFI_RESULT_OK
+pub unsafe extern "C" fn block_proofs(block: *const Block, o_proofs: *mut *const ProofList) -> i32 {
+    catch_unwind_err_set(|| -> Result<_, Error> { Ok(()) })
 }
 
 /// Converts `vote` to a `Proof` and attempts to add it to the block. Returns an error if `vote` is
@@ -68,12 +68,15 @@ pub unsafe extern "C" fn block_add_vote(
     peer_id: *const u8,
     vote: *const Vote,
     o_new_proof: *mut u8,
-) -> *const FfiResult {
-    FFI_RESULT_OK
+) -> i32 {
+    catch_unwind_err_set(|| -> Result<_, Error> { Ok(()) })
 }
 
 /// Frees this block and its associated data.
 #[no_mangle]
-pub unsafe extern "C" fn block_free(block: *const Block) -> *const FfiResult {
-    FFI_RESULT_OK
+pub unsafe extern "C" fn block_free(block: *mut Block) -> i32 {
+    catch_unwind_err_set(|| -> Result<_, Error> {
+        let _ = Box::from_raw(block);
+        Ok(())
+    })
 }
