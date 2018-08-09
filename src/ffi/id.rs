@@ -11,7 +11,7 @@ use error::Error;
 use ffi::utils;
 use id::Proof as NativeProof;
 use mock::PeerId;
-use std::{mem, slice, str};
+use std::{slice, str};
 
 /// Opaque structure holding a signature.
 pub struct Signature;
@@ -77,8 +77,7 @@ pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
 pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
         let secret = SecretId(PeerId::new("abc")); // rand
-        *o_secret = &secret;
-        mem::forget(secret);
+        *o_secret = Box::into_raw(Box::new(secret));
         Ok(())
     })
 }
@@ -132,12 +131,6 @@ pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
 
 /// Serves as an opaque pointer to `Proof` struct.
 pub struct Proof(pub(crate) NativeProof<PeerId>);
-
-impl Proof {
-    pub(crate) fn new(native_proof: NativeProof<PeerId>) -> Proof {
-        Proof(native_proof)
-    }
-}
 
 /// Returns a public ID to `o_public_id` associated with a `proof`.
 #[no_mangle]

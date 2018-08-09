@@ -10,7 +10,9 @@
 
 use error::Error;
 use ffi::error;
-use ffi_utils;
+use std::fmt::Debug;
+use std::panic::{self, AssertUnwindSafe};
+use std::slice;
 
 // #[macro_export]
 // macro_rules! try_res {
@@ -37,12 +39,23 @@ use ffi_utils;
 //     }};
 // }
 
+fn catch_unwind_result<'a, F, T, E>(f: F) -> Result<T, E>
+where
+    F: FnOnce() -> Result<T, E>,
+    E: Debug + From<&'a str>,
+{
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Err(_) => Err(E::from("panic")),
+        Ok(result) => result,
+    }
+}
+
 /// Catches panics. On error sets the thread-local error message and returns the `i32` error code.
 pub fn catch_unwind_err_set<'a, F>(f: F) -> i32
 where
     F: FnOnce() -> Result<(), Error>,
 {
-    match ffi_utils::catch_unwind_result(f) {
+    match catch_unwind_result(f) {
         Err(err) => {
             let (error_code, description) = ffi_result!(Err::<(), Error>(err));
             error::err_set(error_code, description);
@@ -80,6 +93,25 @@ where
 
     if res == 0 {
         Ok(output)
+    } else {
+        Err(res)
+    }
+}
+
+/// Runs an FFI function that contains a u8 array and length output parameters and returns either
+/// the array and length output parameters on success or an `i32` error code on failure.
+pub unsafe fn get_vec_u8<F>(f: F) -> Result<Vec<u8>, i32>
+where
+    F: FnOnce(*mut *const u8, *mut usize) -> i32,
+{
+    use std::mem;
+
+    let mut ptr: *const u8 = mem::uninitialized();
+    let mut len: usize = mem::uninitialized();
+    let res = f(&mut ptr, &mut len);
+
+    if res == 0 {
+        Ok(slice::from_raw_parts(ptr, len).to_vec())
     } else {
         Err(res)
     }

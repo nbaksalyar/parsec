@@ -33,7 +33,7 @@ pub unsafe extern "C" fn parsec_new(
             genesis_vec.iter().map(|id| (**id).0.clone()).collect();
 
         let native_parsec = NativeParsec::new((*our_id).0.clone(), &genesis_group_set)?;
-        let mut parsec = Box::new(Parsec(native_parsec));
+        let parsec = Box::new(Parsec(native_parsec));
 
         *o_parsec = Box::into_raw(parsec);
         Ok(())

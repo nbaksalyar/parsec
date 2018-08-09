@@ -25,6 +25,7 @@ pub unsafe extern "C" fn vote_new(
 ) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<(), Error> {
         let payload_vec = slice::from_raw_parts(payload, payload_len).to_vec();
+
         let native_vote = NativeVote::new(&(*secret_id).0, payload_vec)?;
 
         *o_vote = Box::into_raw(Box::new(Vote(native_vote)));
@@ -93,7 +94,7 @@ pub unsafe extern "C" fn vote_create_proof(
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
         let native_proof = (*vote).0.create_proof(&(*public_id).0)?;
 
-        *o_proof = Box::into_raw(Box::new(Proof::new(native_proof)));
+        *o_proof = Box::into_raw(Box::new(Proof(native_proof)));
         Ok(())
     })
 }
@@ -103,4 +104,42 @@ pub unsafe extern "C" fn vote_create_proof(
 pub unsafe extern "C" fn vote_free(vote: *const Vote) -> i32 {
     let _ = Box::from_raw(vote as *mut Vote);
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use ffi::{self, utils};
+
+    #[test]
+    fn ffi_vote_smoke_test() {
+        let secret_id = unsafe { unwrap!(utils::get_1(|out| ffi::secret_id_new(out))) };
+        let payload = b"testing".to_vec();
+        let vote = unsafe {
+            unwrap!(utils::get_1(|out| ffi::vote_new(
+                secret_id,
+                payload.as_ptr(),
+                payload.len(),
+                out
+            )))
+        };
+
+        let result = unsafe {
+            unwrap!(utils::get_vec_u8(|out, len| ffi::vote_payload(
+                vote, out, len
+            )))
+        };
+        assert_eq!(result, payload);
+
+        // let public_id =
+        //     unsafe { unwrap!(utils::get_1(|out| ffi::secret_id_public(secret_id, out))) };
+
+        // let is_valid =
+        //     unsafe { unwrap!(utils::get_1(|out| ffi::vote_is_valid(vote, public_id, out))) };
+        // assert_eq!(is_valid, 1);
+
+        unsafe {
+            unwrap!(utils::get_0(|| ffi::secret_id_free(secret_id)));
+            unwrap!(utils::get_0(|| ffi::vote_free(vote)));
+        }
+    }
 }
