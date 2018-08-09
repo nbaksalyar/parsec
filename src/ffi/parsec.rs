@@ -8,7 +8,7 @@
 
 use error::Error;
 use ffi::utils::catch_unwind_err_set;
-use ffi::{Block, FfiResult, NetworkEvent, PeerId, PublicId, Request, Response, SecretId};
+use ffi::{Block, NetworkEvent, PeerId, PublicId, Request, Response, SecretId};
 use parsec::Parsec as NativeParsec;
 use std::collections::BTreeSet;
 use std::{mem, ptr, slice};

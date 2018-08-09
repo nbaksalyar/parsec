@@ -13,7 +13,7 @@ use std::slice;
 use vote::Vote as NativeVote;
 
 /// Serves as an opaque pointer to `Vote` struct.
-pub struct Vote(NativeVote<NetworkEvent, PeerId>);
+pub struct Vote(pub(crate) NativeVote<NetworkEvent, PeerId>);
 
 #[no_mangle]
 pub unsafe extern "C" fn vote_new(

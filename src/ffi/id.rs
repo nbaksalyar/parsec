@@ -127,7 +127,7 @@ pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
 }
 
 /// Serves as an opaque pointer to `Proof` struct.
-pub struct Proof(NativeProof<PeerId>);
+pub struct Proof(pub(crate) NativeProof<PeerId>);
 
 impl Proof {
     pub(crate) fn new(native_proof: NativeProof<PeerId>) -> Proof {
@@ -195,17 +195,21 @@ pub unsafe extern "C" fn proof_free(proof: *const Proof) -> i32 {
 pub struct ProofList {
     pub proofs: *const Proof,
     pub proofs_len: usize,
+    pub proofs_cap: usize,
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn proof_list_free(proof_list: *const ProofList) -> i32 {
+pub unsafe extern "C" fn proof_list_free(proof_list: *mut ProofList) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
-        let slice = slice::from_raw_parts((*proof_list).proofs, (*proof_list).proofs_len);
+        let vec = Vec::from_raw_parts(
+            (*proof_list).proofs as *mut _,
+            (*proof_list).proofs_len,
+            (*proof_list).proofs_cap,
+        );
 
-        for proof in slice {
+        for proof in vec {
             let _ = proof_free(proof); // TODO: unused result
         }
-        let _ = *proof_list;
 
         Ok(())
     })
