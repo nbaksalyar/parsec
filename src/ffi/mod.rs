@@ -8,20 +8,20 @@
 
 //! FFI.
 
-// TODO: !!!
-#![allow(unused)]
-#![allow(missing_docs)]
 #![allow(unsafe_code)]
 
 #[macro_use]
 pub mod utils;
 
+/// Functions defining blocks API.
 pub mod block;
 /// Functions for getting and clearing FFI errors.
 pub mod error;
 /// Functions defining public and private identity traits and objects.
 pub mod id;
+/// Functions defining public interface for core Parsec functions.
 pub mod parsec;
+/// Functions defining votes API.
 pub mod vote;
 
 use super::{Request as ParsecReq, Response as ParsecResp};
@@ -29,13 +29,17 @@ use mock;
 use network_event::NetworkEvent as NetEvent;
 
 pub(crate) type NetworkEvent = Vec<u8>;
-pub(crate) type Signature = Vec<u8>;
+// pub(crate) type Signature = Vec<u8>;
 pub(crate) type PeerId = mock::PeerId;
 
+/// Secret peer signing key.
 pub struct SecretId(PeerId);
+/// Public peer signing key.
 pub struct PublicId(PeerId);
 
+/// Opaque structure holding a request from a peer.
 pub struct Request(ParsecReq<NetworkEvent, PeerId>);
+/// Opaque structure holding a response from a peer.
 pub struct Response(ParsecResp<NetworkEvent, PeerId>);
 
 impl NetEvent for Vec<u8> {}

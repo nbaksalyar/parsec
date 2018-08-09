@@ -10,9 +10,7 @@
 
 use error::Error;
 use ffi::error;
-use ffi_utils::{self, ErrorCode};
-use std::fmt::{Debug, Display};
-use std::panic::{self, AssertUnwindSafe};
+use ffi_utils;
 
 // #[macro_export]
 // macro_rules! try_res {

@@ -11,7 +11,7 @@ use ffi::utils::catch_unwind_err_set;
 use ffi::{Block, NetworkEvent, PeerId, PublicId, Request, Response, SecretId};
 use parsec::Parsec as NativeParsec;
 use std::collections::BTreeSet;
-use std::{mem, ptr, slice};
+use std::{ptr, slice};
 
 /// Serves as an opaque pointer to `Parsec` struct.
 pub struct Parsec(NativeParsec<NetworkEvent, PeerId>);
@@ -104,7 +104,7 @@ pub unsafe extern "C" fn parsec_handle_response(
     resp: *const Response,
 ) -> i32 {
     catch_unwind_err_set(|| -> Result<_, Error> {
-        let resp = (*parsec).0.handle_response(&(*src).0, (*resp).0.clone())?;
+        (*parsec).0.handle_response(&(*src).0, (*resp).0.clone())?;
         Ok(())
     })
 }

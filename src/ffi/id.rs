@@ -9,13 +9,11 @@
 use super::{PublicId, SecretId};
 use error::Error;
 use ffi::utils;
-use ffi_utils::{FfiResult, FFI_RESULT_OK};
 use id::Proof as NativeProof;
 use mock::PeerId;
-use rand::Rng;
 use std::{mem, slice, str};
 
-#[repr(C)]
+/// Opaque structure holding a signature.
 pub struct Signature;
 
 // #[no_mangle]
@@ -27,12 +25,12 @@ pub struct Signature;
 //     0
 // }
 
-#[no_mangle]
-pub extern "C" fn signature_free(signature: *const Signature) -> i32 {
-    // let _ = Box::from_raw((*self).signature as *mut _);
-    // let _ = Box::from_raw(signature as *mut _);
-    0
-}
+// #[no_mangle]
+// pub unsafe extern "C" fn signature_free(_signature: *const Signature) -> i32 {
+//     // let _ = Box::from_raw((*self).signature as *mut _);
+//     // let _ = Box::from_raw(signature as *mut _);
+//     0
+// }
 
 // /// Verifies `signature` against `data` using this `public_key`. Returns `1` if valid.
 // #[no_mangle]
@@ -46,6 +44,8 @@ pub extern "C" fn signature_free(signature: *const Signature) -> i32 {
 //     0
 // }
 
+/// Creates a public ID from raw bytes pointed by `id` with a size `id_len`.
+/// Returns the opaque pointer to the `o_public_id`.
 #[no_mangle]
 pub unsafe extern "C" fn public_id_from_bytes(
     id: *const u8,
@@ -61,6 +61,7 @@ pub unsafe extern "C" fn public_id_from_bytes(
     })
 }
 
+/// Deallocates a public id.
 #[no_mangle]
 pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
@@ -87,8 +88,8 @@ pub unsafe extern "C" fn secret_id_new(o_secret: *mut *const SecretId) -> i32 {
 /// `o_public_key` must be freed using `public_key_free`.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_public(
-    secret_key: *const SecretId,
-    o_public_key: *mut *const PublicId,
+    _secret_key: *const SecretId,
+    _o_public_key: *mut *const PublicId,
 ) -> i32 {
     0
 }
@@ -103,6 +104,8 @@ pub unsafe extern "C" fn secret_id_public(
 //     0
 // }
 
+/// Creates a secret ID from raw bytes pointed by `id` with a size `id_len`.
+/// Returns the opaque pointer to the `o_secret_id`.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_from_bytes(
     id: *const u8,
@@ -118,6 +121,7 @@ pub unsafe extern "C" fn secret_id_from_bytes(
     })
 }
 
+/// Deallocates a secret id.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_free(secret_id: *const SecretId) -> i32 {
     // let _ = Box::from_raw((*self).id as *mut _);
@@ -135,6 +139,7 @@ impl Proof {
     }
 }
 
+/// Returns a public ID to `o_public_id` associated with a `proof`.
 #[no_mangle]
 pub unsafe extern "C" fn proof_public_id(
     proof: *const Proof,
@@ -148,6 +153,7 @@ pub unsafe extern "C" fn proof_public_id(
     })
 }
 
+/// Returns a signature associated with a `proof`.
 #[no_mangle]
 pub unsafe extern "C" fn proof_signature(
     proof: *const Proof,
@@ -163,6 +169,7 @@ pub unsafe extern "C" fn proof_signature(
     })
 }
 
+/// Verifies the `proof` against data. Writes `1` to `o_is_valid` if valid.
 #[no_mangle]
 pub unsafe extern "C" fn proof_is_valid(
     proof: *const Proof,
@@ -183,6 +190,7 @@ pub unsafe extern "C" fn proof_is_valid(
     })
 }
 
+/// Deallocates proof.
 #[no_mangle]
 pub unsafe extern "C" fn proof_free(proof: *const Proof) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {
@@ -191,13 +199,19 @@ pub unsafe extern "C" fn proof_free(proof: *const Proof) -> i32 {
     })
 }
 
+/// Container for a list of proofs.
+/// Should be deallocated with `proof_list_free`.
 #[repr(C)]
 pub struct ProofList {
+    /// Pointer to a sequential list of proofs.
     pub proofs: *const Proof,
+    /// Size of the proofs list.
     pub proofs_len: usize,
+    /// Internal implementation detail (Rust vector capacity).
     pub proofs_cap: usize,
 }
 
+/// Deallocates proof list.
 #[no_mangle]
 pub unsafe extern "C" fn proof_list_free(proof_list: *mut ProofList) -> i32 {
     utils::catch_unwind_err_set(|| -> Result<_, Error> {

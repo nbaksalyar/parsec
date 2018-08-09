@@ -12,11 +12,10 @@ use block::Block as NativeBlock;
 use error::Error;
 use ffi::utils::catch_unwind_err_set;
 use ffi::{NetworkEvent, PeerId, Proof, ProofList, PublicId, Vote};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::{mem, slice};
 
 /// Block FFI object.
-#[repr(C)]
 pub struct Block(pub(crate) NativeBlock<NetworkEvent, PeerId>);
 
 /// Create a new block from `payload` and the `public_ids` with their corresponding `votes`.
