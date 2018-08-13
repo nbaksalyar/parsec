@@ -11,7 +11,9 @@ use proptest::strategy::{NewTree, Strategy, ValueTree};
 use proptest::test_runner::TestRunner;
 use rand::{SeedableRng, XorShiftRng};
 use utils::proptest::{Bounded, BoundedBoxedStrategy};
-use utils::{Environment, Network, PeerCount, RngChoice, TransactionCount};
+use utils::{
+    Environment, Network, ParsecImpl, ParsecRustImpl, PeerCount, RngChoice, TransactionCount,
+};
 
 #[derive(Debug)]
 pub struct EnvironmentStrategy {
@@ -28,15 +30,15 @@ impl Default for EnvironmentStrategy {
     }
 }
 
-pub struct EnvironmentValueTree {
-    max_env: Environment,
+pub struct EnvironmentValueTree<P: ParsecImpl> {
+    max_env: Environment<P>,
     peers_trans: Box<ValueTree<Value = (usize, usize)>>,
     min_peers_trans: (usize, usize),
     seed: [u32; 4],
 }
 
-impl EnvironmentValueTree {
-    fn filtered_environment(&self, n_peers: usize, n_trans: usize) -> Environment {
+impl<P: ParsecImpl> EnvironmentValueTree<P> {
+    fn filtered_environment(&self, n_peers: usize, n_trans: usize) -> Environment<P> {
         let peer_ids = self
             .max_env
             .network
@@ -60,15 +62,15 @@ impl EnvironmentValueTree {
     }
 }
 
-impl Bounded for EnvironmentValueTree {
-    type Bound = Environment;
+impl<P: ParsecImpl> Bounded for EnvironmentValueTree<P> {
+    type Bound = Environment<P>;
 
-    fn min(&self) -> Environment {
+    fn min(&self) -> Environment<P> {
         let (n_peers, n_trans) = self.min_peers_trans;
         self.filtered_environment(n_peers, n_trans)
     }
 
-    fn max(&self) -> Environment {
+    fn max(&self) -> Environment<P> {
         let (n_peers, n_trans) = (
             self.max_env.network.peers.len(),
             self.max_env.transactions.len(),
@@ -77,10 +79,10 @@ impl Bounded for EnvironmentValueTree {
     }
 }
 
-impl ValueTree for EnvironmentValueTree {
-    type Value = Environment;
+impl<P: ParsecImpl> ValueTree for EnvironmentValueTree<P> {
+    type Value = Environment<P>;
 
-    fn current(&self) -> Environment {
+    fn current(&self) -> Environment<P> {
         let (n_peers, n_trans) = self.peers_trans.current();
         self.filtered_environment(n_peers, n_trans)
     }
@@ -95,8 +97,8 @@ impl ValueTree for EnvironmentValueTree {
 }
 
 impl Strategy for EnvironmentStrategy {
-    type Value = Environment;
-    type Tree = EnvironmentValueTree;
+    type Value = Environment<ParsecRustImpl>;
+    type Tree = EnvironmentValueTree<ParsecRustImpl>;
 
     fn new_tree(&self, runner: &mut TestRunner) -> NewTree<Self> {
         let seed = {

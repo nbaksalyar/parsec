@@ -12,8 +12,8 @@ use proptest::strategy::{NewTree, Strategy, ValueTree};
 use proptest::test_runner::TestRunner;
 use std::collections::BTreeSet;
 use utils::{
-    DelayDistribution, Environment, Request, RequestTiming, Schedule, ScheduleEvent,
-    ScheduleOptions,
+    DelayDistribution, Environment, ParsecImpl, ParsecRustImpl, Request, RequestTiming, Schedule,
+    ScheduleEvent, ScheduleOptions,
 };
 
 #[derive(Debug)]
@@ -164,8 +164,8 @@ pub struct ScheduleStrategy {
 }
 
 impl Strategy for ScheduleStrategy {
-    type Value = (Environment, Schedule);
-    type Tree = ScheduleValueTree;
+    type Value = (Environment<ParsecRustImpl>, Schedule);
+    type Tree = ScheduleValueTree<ParsecRustImpl>;
 
     fn new_tree(&self, runner: &mut TestRunner) -> NewTree<Self> {
         self.env
@@ -175,15 +175,15 @@ impl Strategy for ScheduleStrategy {
     }
 }
 
-pub struct ScheduleValueTree {
-    env: EnvironmentValueTree,
+pub struct ScheduleValueTree<P: ParsecImpl> {
+    env: EnvironmentValueTree<P>,
     opts: ScheduleOptionsValueTree,
     max_schedule: Schedule,
     shrink_opts: bool,
 }
 
-impl ScheduleValueTree {
-    pub fn new(env: EnvironmentValueTree, opts: ScheduleOptionsValueTree) -> Self {
+impl<P: ParsecImpl> ScheduleValueTree<P> {
+    pub fn new(env: EnvironmentValueTree<P>, opts: ScheduleOptionsValueTree) -> Self {
         let mut max_env = env.max();
         let max_opts = opts.max();
         let max_schedule = Schedule::new(&mut max_env, &max_opts);
@@ -196,8 +196,8 @@ impl ScheduleValueTree {
     }
 }
 
-impl ScheduleValueTree {
-    fn filtered_schedule(&self, env: &Environment) -> Schedule {
+impl<P: ParsecImpl> ScheduleValueTree<P> {
+    fn filtered_schedule(&self, env: &Environment<P>) -> Schedule {
         let peers_set: BTreeSet<_> = env.network.peers.iter().map(|p| p.id.clone()).collect();
         let trans_set: BTreeSet<_> = env.transactions.iter().collect();
         let result = self
@@ -232,10 +232,10 @@ impl ScheduleValueTree {
     }
 }
 
-impl ValueTree for ScheduleValueTree {
-    type Value = (Environment, Schedule);
+impl<P: ParsecImpl> ValueTree for ScheduleValueTree<P> {
+    type Value = (Environment<P>, Schedule);
 
-    fn current(&self) -> (Environment, Schedule) {
+    fn current(&self) -> (Environment<P>, Schedule) {
         println!("Scheduling with options: {:?}", self.opts.current());
         let env = self.env.current();
         println!(

@@ -7,12 +7,16 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod environment;
+mod ffi;
+mod implementation;
 mod network;
 mod peer;
 pub mod proptest;
 mod schedule;
 
 pub use self::environment::{Environment, PeerCount, RngChoice, TransactionCount};
+pub use self::ffi::{BlockFfiImpl, ParsecFfiImpl};
+pub use self::implementation::*;
 pub use self::network::Network;
 pub use self::peer::Peer;
 pub use self::schedule::*;
