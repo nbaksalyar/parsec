@@ -6,35 +6,30 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::ParsecImpl;
 use parsec::mock::{self, PeerId, Transaction};
-use parsec::{Request, Response};
 use std::collections::{BTreeMap, BTreeSet};
 use utils::{self, Peer, RequestTiming, Schedule, ScheduleEvent};
 
-enum Message {
-    Request(Request<Transaction, PeerId>, usize),
-    Response(Response<Transaction, PeerId>),
+enum Message<P: ParsecImpl> {
+    Request(P::Request, usize),
+    Response(P::Response),
 }
 
-struct QueueEntry {
+struct QueueEntry<P: ParsecImpl> {
     pub sender: PeerId,
-    pub message: Message,
+    pub message: Message<P>,
     pub deliver_after: usize,
 }
 
-pub struct Network {
-    pub peers: Vec<Peer>,
-    msg_queue: BTreeMap<PeerId, Vec<QueueEntry>>,
+pub struct Network<P: ParsecImpl> {
+    pub peers: Vec<Peer<P>>,
+    msg_queue: BTreeMap<PeerId, Vec<QueueEntry<P>>>,
 }
 
-type DifferingBlocksOrder<'a> = (
-    &'a PeerId,
-    Vec<&'a Transaction>,
-    &'a PeerId,
-    Vec<&'a Transaction>,
-);
+type DifferingBlocksOrder<'a> = (&'a PeerId, Vec<Transaction>, &'a PeerId, Vec<Transaction>);
 
-impl Network {
+impl<P: ParsecImpl> Network<P> {
     /// Create test network with the given initial number of peers (the genesis group).
     pub fn new(count: usize) -> Self {
         let all_ids = mock::create_ids(count);
@@ -73,15 +68,21 @@ impl Network {
         }
     }
 
-    fn peer(&mut self, id: &PeerId) -> &Peer {
+    fn peer(&mut self, id: &PeerId) -> &Peer<P> {
         unwrap!(self.peers.iter().find(|peer| peer.id == *id))
     }
 
-    fn peer_mut(&mut self, id: &PeerId) -> &mut Peer {
+    fn peer_mut(&mut self, id: &PeerId) -> &mut Peer<P> {
         unwrap!(self.peers.iter_mut().find(|peer| peer.id == *id))
     }
 
-    fn send_message(&mut self, src: PeerId, dst: &PeerId, message: Message, deliver_after: usize) {
+    fn send_message(
+        &mut self,
+        src: PeerId,
+        dst: &PeerId,
+        message: Message<P>,
+        deliver_after: usize,
+    ) {
         self.msg_queue
             .entry(dst.clone())
             .or_insert_with(Vec::new)

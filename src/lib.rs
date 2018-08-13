@@ -67,6 +67,8 @@ extern crate lazy_static;
 extern crate log;
 #[macro_use]
 extern crate maidsafe_utilities;
+#[cfg(all(test, target_os = "linux"))]
+extern crate procinfo;
 #[macro_use]
 extern crate quick_error;
 extern crate rand;
@@ -74,6 +76,8 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate tiny_keccak;
+#[macro_use]
+extern crate unwrap;
 
 mod block;
 mod dump_graph;
@@ -87,6 +91,8 @@ mod parsec;
 mod peer_list;
 mod round_hash;
 mod vote;
+
+pub mod ffi;
 
 #[doc(hidden)]
 /// **NOT FOR PRODUCTION USE**: Mock types which trivially implement the required Parsec traits.
@@ -109,7 +115,6 @@ pub use vote::Vote;
 use maidsafe_utilities::serialisation;
 use serde::ser::Serialize;
 use std::fmt::Debug;
-
 fn serialise<T: Serialize + Debug>(data: &T) -> Vec<u8> {
     if let Ok(serialised) = serialisation::serialise(data) {
         serialised
