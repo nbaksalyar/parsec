@@ -16,12 +16,13 @@ use std::{slice, str};
 ///
 /// Should be deallocated with `secret_id_free`.
 pub struct SecretId(pub(crate) PeerId);
+
 /// Public peer signing key.
 ///
 /// Should be deallocated with `public_id_free`.
 pub struct PublicId(pub(crate) PeerId);
 
-/// Creates a public ID from raw bytes pointed by `id` with a size `id_len`.
+/// Creates a public ID from raw bytes pointed by `bytes` with a size `bytes_len`.
 /// Returns the opaque pointer to `o_public_id`.
 ///
 /// `o_public_id` must be freed using `public_id_free`.
@@ -40,7 +41,10 @@ pub unsafe extern "C" fn public_id_from_bytes(
     })
 }
 
-/// Returns the bytes contained in `public_id`.
+/// Passes back the bytes contained in `public_id` through the output variables
+/// `o_bytes` and `o_bytes_len`.
+///
+/// The returned pointers must be freed using `public_id_free`.
 #[no_mangle]
 pub unsafe extern "C" fn public_id_as_bytes(
     public_id: *const PublicId,
@@ -65,7 +69,7 @@ pub unsafe extern "C" fn public_id_free(public_id: *const PublicId) -> i32 {
     })
 }
 
-/// Creates a secret ID from raw bytes pointed by `id` with a size `id_len`.
+/// Creates a secret ID from raw bytes pointed by `bytes` with a size `bytes_len`.
 /// Returns the opaque pointer to the `o_secret_id`.
 ///
 /// `o_secret_id` must be freed using `secret_id_free`.
@@ -84,7 +88,10 @@ pub unsafe extern "C" fn secret_id_from_bytes(
     })
 }
 
-/// Returns the bytes contained in `secret_id`.
+/// Passes back the bytes contained in `secret_id` through the output variables
+/// `o_bytes` and `o_bytes_len`.
+///
+/// The returned pointers must be freed using `secret_id_free`.
 #[no_mangle]
 pub unsafe extern "C" fn secret_id_as_bytes(
     secret_id: *const SecretId,

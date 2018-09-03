@@ -30,20 +30,18 @@ pub unsafe extern "C" fn err_last() -> *const FfiResult {
 #[no_mangle]
 pub unsafe extern "C" fn err_clear() {
     LAST_ERROR.with(|last| {
-        if let Some(err) = *last.borrow() {
+        if let Some(err) = last.borrow_mut().take() {
             // Drop the description string
             let _ = CString::from_raw(err.description as *mut _);
         }
-        *last.borrow_mut() = None;
     });
 }
 
 /// Sets the error. For internal use.
 pub(crate) fn err_set(error_code: i32, description: CString) {
     // Clear the last error.
-    if let Some(err) = err_take() {
-        // Drop the allocated data.
-        let _ = unsafe { CString::from_raw(err.description as *mut _) };
+    unsafe {
+        err_clear();
     }
 
     // Set the new error.
@@ -53,11 +51,6 @@ pub(crate) fn err_set(error_code: i32, description: CString) {
             description: description.into_raw(),
         });
     });
-}
-
-// Retrieves the most recent error, clearing it in the process.
-fn err_take() -> Option<FfiResult> {
-    LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
 #[cfg(test)]

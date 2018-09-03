@@ -84,7 +84,6 @@ pub mod codes {
     pub const ERR_UNKNOWN_PARENT: i32 = -7;
     pub const ERR_DUPLICATE_VOTE: i32 = -8;
     pub const ERR_UTF8: i32 = -9;
-
     pub const ERR_LOGIC: i32 = -100;
     pub const ERR_UNEXPECTED: i32 = -101;
 }
@@ -103,7 +102,6 @@ impl ErrorCode for Error {
             Error::UnknownParent => ERR_UNKNOWN_PARENT,
             Error::DuplicateVote => ERR_DUPLICATE_VOTE,
             Error::Utf8(_) => ERR_UTF8,
-
             Error::Logic => ERR_LOGIC,
             Error::Unexpected(_) => ERR_UNEXPECTED,
         }
