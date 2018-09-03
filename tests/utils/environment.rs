@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::ParsecImpl;
 use maidsafe_utilities::SeededRng;
 use parsec::mock::Transaction;
 use rand::{Rng, SeedableRng, XorShiftRng};
@@ -20,8 +21,8 @@ pub trait RngDebug: Rng + fmt::Debug {}
 impl RngDebug for SeededRng {}
 impl RngDebug for XorShiftRng {}
 
-pub struct Environment {
-    pub network: Network,
+pub struct Environment<P: ParsecImpl> {
+    pub network: Network<P>,
     pub transactions: Vec<Transaction>,
     pub rng: Box<RngDebug>,
 }
@@ -34,7 +35,7 @@ pub enum RngChoice {
     SeededXor([u32; 4]),
 }
 
-impl Environment {
+impl<P: ParsecImpl> Environment<P> {
     /// Initialise the test environment with the given number of peers and transactions.  The random
     /// number generator will be seeded with `seed` or randomly if this is `SeededRandom`.
     pub fn new(
@@ -63,7 +64,7 @@ impl Environment {
     }
 }
 
-impl fmt::Debug for Environment {
+impl<P: ParsecImpl> fmt::Debug for Environment<P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
